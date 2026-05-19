@@ -45,7 +45,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .vtabs{display:flex;background:var(--s3);border-radius:7px;padding:2px;gap:2px}
 .vt{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:var(--t3);border:none;background:transparent;font-family:'Syne',sans-serif;transition:all .15s}
 .vt.on{background:var(--s2);color:var(--t1);border:1px solid var(--b2)}
-.tb-r{margin-left:auto;display:flex;gap:6px;padding:0 12px}
+.tb-r{margin-left:auto;display:flex;gap:6px;padding:0 12px;align-items:center;min-width:0}
 .btn{padding:5px 11px;border-radius:6px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
 .btn-g{background:transparent;color:var(--t2);border:1px solid var(--b2)}
 .btn-g:hover{border-color:var(--b3);color:var(--t1)}
@@ -57,6 +57,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .cloud-status.sync .cloud-dot{background:var(--warn)}
 .cloud-status.err .cloud-dot{background:var(--danger)}
 .cloud-status.local .cloud-dot{background:var(--t3)}
+.more-wrap{position:relative;flex-shrink:0}
+.more-menu{position:absolute;right:0;top:32px;width:190px;background:var(--s3);border:1px solid var(--b2);border-radius:9px;padding:5px;z-index:700;display:none;box-shadow:0 12px 36px rgba(0,0,0,.55)}
+.more-menu.open{display:block}
+.more-item{width:100%;height:30px;padding:0 10px;border:none;background:transparent;color:var(--t2);border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-align:left;cursor:pointer;display:flex;align-items:center;gap:8px}
+.more-item:hover{background:var(--b1);color:var(--t1)}
+.more-sep{height:1px;background:var(--b1);margin:4px 0}
 
 /* ── CONFLICT BANNER ── */
 .conflict-bar{background:#3d1a0a;border-bottom:1px solid var(--warn);padding:6px 16px;display:flex;align-items:center;gap:10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--warn);flex-shrink:0;display:none}
@@ -97,15 +103,17 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 /* ── GANTT ── */
 /* ── SCROLLBARS ── */
 .gantt-wrap{flex:1;overflow:auto;position:relative}
-.gantt-wrap::-webkit-scrollbar{height:12px;width:12px}
-.gantt-wrap::-webkit-scrollbar-track{background:var(--s1);border-top:1px solid var(--b1)}
-.gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:6px;border:3px solid var(--s1)}
+.gantt-wrap{scrollbar-color:var(--b3) var(--s2);scrollbar-width:auto}
+.gantt-wrap::-webkit-scrollbar{height:18px;width:14px}
+.gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b2)}
+.gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px;border:4px solid var(--s2)}
 .gantt-wrap::-webkit-scrollbar-thumb:hover{background:var(--acc)}
 .gantt-wrap::-webkit-scrollbar-corner{background:var(--s1)}
 .flip-gantt-wrap{flex:1;overflow:auto;position:relative}
-.flip-gantt-wrap::-webkit-scrollbar{height:12px;width:12px}
-.flip-gantt-wrap::-webkit-scrollbar-track{background:var(--s1);border-top:1px solid var(--b1)}
-.flip-gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:6px;border:3px solid var(--s1)}
+.flip-gantt-wrap{scrollbar-color:var(--b3) var(--s2);scrollbar-width:auto}
+.flip-gantt-wrap::-webkit-scrollbar{height:18px;width:14px}
+.flip-gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b2)}
+.flip-gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px;border:4px solid var(--s2)}
 .flip-gantt-wrap::-webkit-scrollbar-thumb:hover{background:var(--acc)}
 .flip-gantt-wrap::-webkit-scrollbar-corner{background:var(--s1)}
 .sb-rows{flex:1;overflow-y:scroll;overflow-x:hidden}
@@ -323,9 +331,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .emp-avatar:hover{filter:brightness(1.2)}
 .flip-emp-name{font-size:11px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .flip-gantt-wrap{flex:1;overflow:auto;position:relative}
-.flip-gantt-wrap::-webkit-scrollbar{height:10px;width:6px}
-.flip-gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b1)}
-.flip-gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:5px;border:2px solid var(--s2)}
+.flip-gantt-wrap::-webkit-scrollbar{height:18px;width:14px}
+.flip-gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b2)}
+.flip-gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px;border:4px solid var(--s2)}
 .flip-gantt-wrap::-webkit-scrollbar-thumb:hover{background:var(--acc)}
 .flip-gantt{display:flex;flex-direction:column;min-width:max-content}
 /* Each emp row in the gantt grid is same height as sidebar */
@@ -377,9 +385,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .flip-vac-row.fri{background:rgba(91,143,255,.08);color:var(--acc)}
 
 /* ── SØGNING ── */
-.search-wrap{position:relative;display:flex;align-items:center;padding:0 10px;border-right:1px solid var(--b1);height:100%}
-.search-input{background:var(--s3);border:1px solid var(--b1);border-radius:6px;color:var(--t1);font-family:'DM Mono',monospace;font-size:11px;padding:5px 10px 5px 28px;outline:none;width:160px;transition:border-color .15s,width .2s}
-.search-input:focus{border-color:var(--acc);width:200px}
+.search-wrap{position:relative;display:flex;align-items:center;padding:0 6px;height:100%;min-width:120px;max-width:200px;flex:1 1 160px}
+.search-input{background:var(--s3);border:1px solid var(--b1);border-radius:6px;color:var(--t1);font-family:'DM Mono',monospace;font-size:11px;padding:5px 10px 5px 28px;outline:none;width:100%;transition:border-color .15s}
+.search-input:focus{border-color:var(--acc)}
 .search-icon{position:absolute;left:19px;color:var(--t3);font-size:12px;pointer-events:none}
 .search-results{position:absolute;top:calc(100% + 4px);left:10px;width:280px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:200;max-height:320px;overflow-y:auto;display:none}
 .search-results.open{display:block}
@@ -477,21 +485,29 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <div class="cloud-status local" id="cloud-status" title="Supabase synkronisering" onclick="if(!cloudUser)openAuthM()">
       <span class="cloud-dot"></span><span id="cloud-status-text">Lokal</span>
     </div>
-    <button class="btn btn-g" id="logout-btn" onclick="signOut()" title="Log ud" style="display:none">Log ud</button>
     <div class="search-wrap" id="search-wrap">
       <span class="search-icon">🔍</span>
       <input class="search-input" id="search-input" placeholder="Søg opgave, projekt…" autocomplete="off"
         oninput="onSearch(this.value)" onfocus="onSearch(this.value)" />
       <div class="search-results" id="search-results"></div>
     </div>
-    <button class="btn btn-g" onclick="openVacM()" title="Ferie &amp; fri">🏖</button>
-    <button class="btn btn-g" id="theme-btn" onclick="toggleTheme()" title="Skift tema">🌙</button>
-    <button class="btn btn-g" onclick="exportData()" title="Eksportér data til deling">⬇ Eksportér</button>
-    <button class="btn btn-g" onclick="document.getElementById('import-file').click()" title="Importér data fra kollega">⬆ Importér</button>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
-    <button class="btn btn-g" onclick="resetAllData()" title="Nulstil til eksempeldata" style="color:var(--t3)">↺</button>
-    <button class="btn btn-g" onclick="openEmpM()">+ Medarbejder</button>
     <button class="btn btn-p" onclick="openTaskM()">+ Opgave</button>
+    <div class="more-wrap">
+      <button class="btn btn-g" onclick="toggleMoreMenu(event)">Mere ▾</button>
+      <div class="more-menu" id="more-menu">
+        <button class="more-item" onclick="openVacM();closeMoreMenu()">🏖 Ferie & fri</button>
+        <button class="more-item" id="theme-btn" onclick="toggleTheme();closeMoreMenu()">🌙 Skift tema</button>
+        <div class="more-sep"></div>
+        <button class="more-item" onclick="backupData();closeMoreMenu()">💾 Backup</button>
+        <button class="more-item" onclick="exportData();closeMoreMenu()">⬇ Eksportér</button>
+        <button class="more-item" onclick="document.getElementById('import-file').click();closeMoreMenu()">⬆ Importér</button>
+        <div class="more-sep"></div>
+        <button class="more-item" onclick="openEmpM();closeMoreMenu()">+ Medarbejder</button>
+        <button class="more-item" onclick="resetAllData();closeMoreMenu()">↺ Nulstil data</button>
+        <button class="more-item" id="logout-btn" onclick="signOut();closeMoreMenu()" style="display:none">Log ud</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1996,17 +2012,39 @@ function onSearch(q){
 
 // ── EKSPORT / IMPORT ─────────────────────────────────────
 function exportData(){
-  const data={emps,projs,tasks,comments,vacations,collapsed:[...collapsed],pseq,tseq,cseq,vacSeq};
+  const data=statePayload();
+  downloadJson(data,`awell-disponering-${dateStamp(false)}.json`);
+  showToast('Data eksporteret');
+}
+
+async function backupData(){
+  if(cloudEnabled&&cloudReady)await saveCloudState(false);
+  const data={
+    createdAt:new Date().toISOString(),
+    source:'awell-disponering',
+    synced:!!(cloudEnabled&&cloudReady),
+    payload:statePayload()
+  };
+  downloadJson(data,`awell-backup-${dateStamp(true)}.json`);
+  showToast('Backup downloadet');
+}
+
+function dateStamp(withTime){
+  const d=new Date();
+  const date=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  if(!withTime)return date;
+  return `${date}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function downloadJson(data,fileName){
   const json=JSON.stringify(data,null,2);
   const blob=new Blob([json],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  const date=new Date();
-  a.download=`awell-disponering-${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}.json`;
+  a.download=fileName;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Data eksporteret');
 }
 
 function importData(input){
@@ -2052,10 +2090,13 @@ function applyTheme(){
 
 // ── TOAST + KEYS ─────────────────────────────────────────
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast on'+(type?' '+type:'');setTimeout(()=>t.classList.remove('on'),2500)}
+function toggleMoreMenu(e){e.stopPropagation();document.getElementById('more-menu').classList.toggle('open')}
+function closeMoreMenu(){document.getElementById('more-menu').classList.remove('open')}
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     ['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth'].forEach(id=>document.getElementById(id).classList.remove('on'));
     ['ctx-task','ctx-proj'].forEach(id=>document.getElementById(id).classList.remove('on'));
+    closeMoreMenu();
     document.getElementById('search-results').classList.remove('open');
     document.getElementById('search-input').value='';
     closePopup();
@@ -2067,6 +2108,7 @@ document.addEventListener('keydown',e=>{
 });
 ['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')})});
 document.addEventListener('click',e=>{
+  if(!e.target.closest('.more-wrap'))closeMoreMenu();
   if(!e.target.closest('#search-wrap'))
     document.getElementById('search-results').classList.remove('open');
   if(popJustOpened)return;
