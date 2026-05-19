@@ -932,10 +932,11 @@ function setView(v){
 
 // ── RENDER ────────────────────────────────────────────────
 function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
-  const wrap=document.getElementById(wrapId),proxy=document.getElementById(proxyId),inner=document.getElementById(innerId);
-  if(!wrap||!proxy||!inner)return;
-  inner.style.width=Math.max(totalW,wrap.clientWidth+1)+'px';
-  const thumb=proxy.querySelector('.x-scroll-thumb'),track=proxy.querySelector('.x-scroll-track');
+  const wrap=document.getElementById(wrapId);
+  if(!wrap)return;
+  const proxy=document.getElementById(proxyId),inner=document.getElementById(innerId);
+  if(inner)inner.style.width=Math.max(totalW,wrap.clientWidth+1)+'px';
+  const thumb=proxy?proxy.querySelector('.x-scroll-thumb'):null,track=proxy?proxy.querySelector('.x-scroll-track'):null;
   const updateThumb=()=>{
     if(!thumb||!track)return;
     const max=Math.max(1,wrap.scrollWidth-wrap.clientWidth);
@@ -946,8 +947,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
     thumb.style.width=thumbW+'px';
     thumb.style.left=left+'px';
   };
-  proxy.onclick=e=>{
+  if(proxy)proxy.onclick=e=>{
     if(e.target.closest('.x-scroll-thumb'))return;
+    if(!track)return;
     const r=track.getBoundingClientRect();
     const pct=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
     wrap.scrollLeft=pct*(wrap.scrollWidth-wrap.clientWidth);
@@ -2384,4 +2386,13 @@ function resetAllData(){
 
 // Auto-save after every render is handled inside render() directly
 
-// ── INIT ──────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────
+vs=mon(new Date());
+applyTheme();
+const hadSaved=loadState();
+if(!hadSaved)seed();
+// defer so gantt-wrap has a real clientWidth
+requestAnimationFrame(()=>requestAnimationFrame(()=>{render();initCloud()}));
+</script>
+</body>
+</html>
