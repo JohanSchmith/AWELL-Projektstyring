@@ -103,20 +103,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 /* ── GANTT ── */
 /* ── SCROLLBARS ── */
 .timeline-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
-.gantt-wrap{flex:1;min-height:0;overflow:auto;position:relative}
-.gantt-wrap{scrollbar-color:var(--b3) var(--s2);scrollbar-width:auto}
-.gantt-wrap::-webkit-scrollbar{height:18px;width:14px}
-.gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b2)}
-.gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px;border:4px solid var(--s2)}
-.gantt-wrap::-webkit-scrollbar-thumb:hover{background:var(--acc)}
-.gantt-wrap::-webkit-scrollbar-corner{background:var(--s1)}
-.flip-gantt-wrap{flex:1;min-height:0;overflow:auto;position:relative}
-.flip-gantt-wrap{scrollbar-color:var(--b3) var(--s2);scrollbar-width:auto}
-.flip-gantt-wrap::-webkit-scrollbar{height:18px;width:14px}
-.flip-gantt-wrap::-webkit-scrollbar-track{background:var(--s2);border-top:1px solid var(--b2)}
-.flip-gantt-wrap::-webkit-scrollbar-thumb{background:var(--b3);border-radius:9px;border:4px solid var(--s2)}
-.flip-gantt-wrap::-webkit-scrollbar-thumb:hover{background:var(--acc)}
-.flip-gantt-wrap::-webkit-scrollbar-corner{background:var(--s1)}
+.gantt-wrap{flex:1;min-height:0;overflow:auto;position:relative;cursor:grab}
+.gantt-wrap.dragging{cursor:grabbing;user-select:none}
+.gantt-wrap{scrollbar-color:transparent transparent;scrollbar-width:none}
+.gantt-wrap::-webkit-scrollbar{display:none}
+.flip-gantt-wrap{flex:1;min-height:0;overflow:auto;position:relative;cursor:grab}
+.flip-gantt-wrap.dragging{cursor:grabbing;user-select:none}
+.flip-gantt-wrap{scrollbar-color:transparent transparent;scrollbar-width:none}
+.flip-gantt-wrap::-webkit-scrollbar{display:none}
 .x-scroll{height:26px;background:var(--s1);border-top:1px solid var(--b2);border-bottom:1px solid var(--b2);flex-shrink:0;position:relative;padding:8px 16px;cursor:pointer}
 .x-scroll-track{height:8px;border-radius:999px;background:var(--s3);border:1px solid var(--b2);position:relative;overflow:hidden}
 .x-scroll-thumb{position:absolute;top:0;bottom:0;left:0;width:100%;min-width:46px;border-radius:999px;background:var(--b3);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);cursor:grab}
@@ -976,6 +970,25 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
   }
   updateThumb();
   wrap.addEventListener('scroll',updateThumb,{passive:true});
+
+  // Drag-to-scroll on the gantt canvas itself
+  let dragStartX=0,dragStartScroll=0,isDragging=false;
+  wrap.addEventListener('mousedown',e=>{
+    if(e.target.closest('.g-task-bar,.g-proj-bar,.flip-task-bar,.flip-proj-bar,.rz'))return;
+    isDragging=true;
+    dragStartX=e.clientX;
+    dragStartScroll=wrap.scrollLeft;
+    wrap.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!isDragging)return;
+    wrap.scrollLeft=dragStartScroll-(e.clientX-dragStartX);
+    updateThumb();
+  });
+  document.addEventListener('mouseup',()=>{
+    if(isDragging){isDragging=false;wrap.classList.remove('dragging')}
+  });
 }
 
 function render(){
