@@ -72,7 +72,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 /* ── LAYOUT ── */
 .main{display:flex;flex:1;overflow:hidden}
 .sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden}
-.sb-head{height:var(--head-h);display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--b1);flex-shrink:0;justify-content:space-between}
+.sb-head{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--b1);flex-shrink:0}
 .sb-lbl{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
 .sb-rows{flex:1;overflow-y:auto;overflow-x:hidden}
 .sb-rows-x{display:none}
@@ -99,7 +99,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .sb-proj.drag-over-bot{border-bottom:2px solid var(--acc)}
 .sb-proj.dragging-proj{opacity:.35}
 .sort-dropdown{position:relative}
-.sort-btn{background:var(--s3);border:1px solid var(--b1);color:var(--t3);border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;height:22px;padding:0 7px;display:flex;align-items:center;gap:4px;transition:all .15s}
+.sort-btn{background:var(--s3);border:1px solid var(--b2);color:var(--t2);border-radius:5px;cursor:pointer;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;height:22px;padding:0 8px;display:flex;align-items:center;gap:4px;transition:all .15s}
 .sort-btn:hover{border-color:var(--acc);color:var(--acc)}
 .sort-btn.active{border-color:var(--acc);color:var(--acc)}
 .sort-menu{position:absolute;right:0;top:26px;width:160px;background:var(--s3);border:1px solid var(--b2);border-radius:8px;padding:4px;z-index:800;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -582,8 +582,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <div class="sb-head">
       <span class="sb-lbl">Projekter &amp; opgaver</span>
       <div style="display:flex;gap:5px;align-items:center">
-        <div class="sort-dropdown" id="sort-dropdown">
-          <button class="sort-btn" id="sort-btn" onclick="toggleSortMenu(event)" title="Sortering">&#x21C5; SORTER</button>
+        <div class="sort-dropdown" id="sort-dropdown" style="flex:1">
+          <button class="sort-btn" id="sort-btn" onclick="toggleSortMenu(event)" title="Sortering" style="width:100%">&#x21C5; SORTER</button>
           <div class="sort-menu" id="sort-menu">
             <button class="sort-item on" id="sort-manual" onclick="setSortMode('manual')">&#x2630; Manuel</button>
             <button class="sort-item" id="sort-num" onclick="setSortMode('num')"># Projektnummer</button>
