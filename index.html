@@ -2634,7 +2634,15 @@ function openCtxProj(e,pid){
   document.getElementById('ctx-archive-btn').textContent=proj?.status==='archived'?'📤 Gendan fra arkiv':'📦 Arkivér projekt';
   const delArcBtn=document.getElementById('ctx-delete-archived-btn');
   if(delArcBtn)delArcBtn.style.display=proj?.status==='archived'?'flex':'none';
-  const m=document.getElementById('ctx-proj');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.classList.add('on');
+  const m=document.getElementById('ctx-proj');
+  m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';
+  m.classList.add('on');
+  // Adjust if menu goes outside viewport
+  requestAnimationFrame(()=>{
+    const r=m.getBoundingClientRect();
+    if(r.bottom>window.innerHeight)m.style.top=(e.clientY-(r.bottom-window.innerHeight)-8)+'px';
+    if(r.right>window.innerWidth)m.style.left=(e.clientX-(r.right-window.innerWidth)-8)+'px';
+  });
   setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10);
 }
 function ctxEditTask(){if(ctxTid)openTaskEdit(ctxTid)}
