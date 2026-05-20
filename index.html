@@ -289,13 +289,16 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-lbl{font-size:8px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .pal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .pal-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
-.pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer}
+.pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .pal-action:hover{border-color:var(--acc);color:var(--acc)}
-.pal-body{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) minmax(260px,1.15fr);gap:12px;align-items:start}
-.pal-section{min-width:0;border-right:1px solid var(--b1);padding-right:12px}
-.pal-section:last-child{border-right:none;padding-right:0}
+.pal-body{display:flex;flex-direction:row;gap:0;align-items:stretch;height:100%;overflow:hidden}
+.pal-section{min-width:80px;overflow:hidden;padding:0 12px;display:flex;flex-direction:column}
+.pal-section:first-child{padding-left:0}
+.pal-section:last-child{padding-right:0}
+.pal-divider{width:5px;flex-shrink:0;cursor:col-resize;background:transparent;border-left:1px solid var(--b1);border-right:1px solid var(--b1);margin:0 -1px;position:relative;z-index:2;transition:background .15s}
+.pal-divider:hover,.pal-divider.dragging{background:var(--acc);opacity:.5}
 .pal-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
-.pal-chips{display:flex;flex-wrap:wrap;gap:4px;min-height:25px}
+.pal-chips{display:flex;flex-wrap:wrap;gap:4px;min-height:25px;align-content:flex-start}
 .pal-chip{height:22px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:grab;user-select:none;border:1px solid transparent;display:flex;align-items:center;transition:filter .15s,transform .1s}
 .pal-chip:hover{filter:brightness(1.2);transform:translateY(-1px)}
 .pal-chip:active{cursor:grabbing}
@@ -1319,8 +1322,8 @@ function renderPalette(){
     wrap.innerHTML=`
       <div class="pal-resize-handle" id="${pid}-resize-handle"></div>
       <div id="${pid}" style="display:none"></div>
-      <div class="pal-body">
-        <div class="pal-section">
+      <div class="pal-body" id="${pid}-body">
+        <div class="pal-section" id="${pid}-sec-emp">
           <div class="pal-section-head">
             <div class="pal-title">Medarbejdere</div>
             <button class="pal-action" onclick="openEmpM('employee')">+ Medarbejder</button>
@@ -1328,7 +1331,8 @@ function renderPalette(){
           <div class="pal-lbl">Træk medarbejder ind på opgave eller hold</div>
           <div class="pal-chips" id="${pid}-employees"></div>
         </div>
-        <div class="pal-section">
+        <div class="pal-divider" id="${pid}-div1"></div>
+        <div class="pal-section" id="${pid}-sec-mat">
           <div class="pal-section-head">
             <div class="pal-title">Materiel</div>
             <button class="pal-action" onclick="openEmpM('material')">+ Materiel</button>
@@ -1336,7 +1340,8 @@ function renderPalette(){
           <div class="pal-lbl">Træk materiel ind på opgave eller hold</div>
           <div class="pal-chips" id="${pid}-materials"></div>
         </div>
-        <div class="pal-section">
+        <div class="pal-divider" id="${pid}-div2"></div>
+        <div class="pal-section" id="${pid}-sec-team">
           <div class="pal-section-head">
             <div class="pal-title">Hold</div>
             <button class="pal-action" onclick="addTeam()">+ Hold</button>
@@ -1434,9 +1439,25 @@ function renderPalette(){
       }
       teamBox.appendChild(box);
     });
-    // Attach resize handle
+    // Attach vertical resize handle
     const rh=document.getElementById(pid+'-resize-handle');
     if(rh)initPaletteResize(rh,wrap);
+    // Attach section divider drag handles
+    const body=document.getElementById(pid+'-body');
+    const secEmp=document.getElementById(pid+'-sec-emp');
+    const secMat=document.getElementById(pid+'-sec-mat');
+    const secTeam=document.getElementById(pid+'-sec-team');
+    const div1=document.getElementById(pid+'-div1');
+    const div2=document.getElementById(pid+'-div2');
+    if(body&&secEmp&&secMat&&secTeam&&div1&&div2){
+      // Apply saved or default widths
+      const saved=_palSectionWidths[pid]||[33.3,33.3,33.4];
+      secEmp.style.flex=`0 0 ${saved[0]}%`;
+      secMat.style.flex=`0 0 ${saved[1]}%`;
+      secTeam.style.flex=`0 0 ${saved[2]}%`;
+      initSectionDivider(div1,secEmp,secMat,secTeam,body,pid,0,1,2);
+      initSectionDivider(div2,secMat,secTeam,null,body,pid,1,2,null);
+    }
     // Drop anywhere on palette = remove from task
     wrap.addEventListener('dragover',ev=>{if(dragSrcTid&&dragEid)ev.preventDefault()});
     wrap.addEventListener('drop',ev=>{
@@ -1451,6 +1472,44 @@ function renderPalette(){
         renderPalette();
       }
     });
+  });
+}
+
+// Store section widths per palette id
+const _palSectionWidths={};
+
+function initSectionDivider(divider,secA,secB,secC,body,pid,iA,iB,iC){
+  divider.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    divider.classList.add('dragging');
+    const startX=e.clientX;
+    const totalW=body.offsetWidth;
+    const startWA=secA.offsetWidth;
+    const startWB=secB.offsetWidth;
+    function onMove(ev){
+      const dx=ev.clientX-startX;
+      const minPx=80;
+      let newA=Math.max(minPx,startWA+dx);
+      let newB=Math.max(minPx,startWB-dx);
+      // Clamp so neither goes below min
+      if(newA<minPx){newA=minPx;newB=startWA+startWB-minPx}
+      if(newB<minPx){newB=minPx;newA=startWA+startWB-minPx}
+      const pA=(newA/totalW)*100;
+      const pB=(newB/totalW)*100;
+      secA.style.flex=`0 0 ${pA}%`;
+      secB.style.flex=`0 0 ${pB}%`;
+      // Update saved widths
+      const saved=_palSectionWidths[pid]||[33.3,33.3,33.4];
+      saved[iA]=pA;saved[iB]=pB;
+      _palSectionWidths[pid]=saved;
+    }
+    function onUp(){
+      divider.classList.remove('dragging');
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+    }
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
   });
 }
 
