@@ -281,8 +281,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
 .pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer}
 .pal-action:hover{border-color:var(--acc);color:var(--acc)}
-.pal-body{display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1.15fr);gap:12px;align-items:start}
+.pal-body{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) minmax(260px,1.15fr);gap:12px;align-items:start}
 .pal-section{min-width:0}
+.pal-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
 .pal-chips{display:flex;flex-wrap:wrap;gap:4px;min-height:25px}
 .pal-chip{height:22px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:grab;user-select:none;border:1px solid transparent;display:flex;align-items:center;transition:filter .15s,transform .1s}
 .pal-chip:hover{filter:brightness(1.2);transform:translateY(-1px)}
@@ -291,7 +292,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-team{min-height:25px;padding:3px 6px;border:1px dashed var(--b2);border-radius:7px;background:rgba(255,255,255,.025);display:flex;align-items:center;gap:5px;flex-wrap:wrap;cursor:grab}
 .pal-team:hover{border-color:var(--acc)}
 .pal-team.drag-over{background:rgba(91,143,255,.12);border-color:var(--acc)}
-.pal-team-name{font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:var(--t1);margin-right:2px}
+.pal-team-name{width:72px;height:20px;border:none;border-bottom:1px solid var(--b2);background:transparent;color:var(--t1);font-size:10px;font-family:'DM Mono',monospace;font-weight:700;outline:none}
+.pal-team-name:focus{border-bottom-color:var(--acc)}
 .pal-team-del{height:18px;width:18px;border-radius:4px;border:none;background:rgba(210,55,55,.14);color:#ff7070;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
 .pal-team-del:hover{background:rgba(210,55,55,.28)}
 .pal-team-member{height:18px;padding:0 5px;border-radius:4px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:3px}
@@ -790,6 +792,7 @@ let teams=[];
 let collapsed=new Set();
 let pseq=1,tseq=1,cseq=1,teamSeq=1;
 let selC=PC[0].id,selEC=EP[0];
+let resourceType='employee';
 let editPid=null,editTid=null,ctxPid=null,ctxTid=null;
 let conflicts={};
 let dragEid=null,dragSrcTid=null,dragEids=null;
@@ -858,6 +861,7 @@ function timelineDays(cfg){
 function projBy(id){return projs.find(p=>p.id===id)}
 function taskBy(id){return tasks.find(t=>t.id===id)}
 function empBy(id){return emps.find(e=>e.id===id)}
+function resourceKind(e){return e?.type==='material'?'material':'employee'}
 function tasksOf(pid){return tasks.filter(t=>t.projId===pid)}
 function projStart(pid){const ts=tasksOf(pid);if(!ts.length)return null;return ts.reduce((m,t)=>t.startDate<m?t.startDate:m,ts[0].startDate)}
 function projEnd(pid){const ts=tasksOf(pid);if(!ts.length)return null;return ts.reduce((m,t)=>t.endDate>m?t.endDate:m,ts[0].endDate)}
@@ -1241,6 +1245,109 @@ function renderPalette(){
 }
 
 // ── GANTT ─────────────────────────────────────────────────
+function renderPalette(){
+  ['palette-plan','palette-flip'].forEach(pid=>{
+    const old=document.getElementById(pid);
+    if(!old)return;
+    const wrap=old.closest('.palette');
+    if(!wrap)return;
+    wrap.innerHTML=`
+      <div id="${pid}" style="display:none"></div>
+      <div class="pal-body">
+        <div class="pal-section">
+          <div class="pal-section-head">
+            <div class="pal-title">Medarbejdere</div>
+            <button class="pal-action" onclick="openEmpM('employee')">+ Medarbejder</button>
+          </div>
+          <div class="pal-lbl">Træk medarbejder ind på opgave eller hold</div>
+          <div class="pal-chips" id="${pid}-employees"></div>
+        </div>
+        <div class="pal-section">
+          <div class="pal-section-head">
+            <div class="pal-title">Materiel</div>
+            <button class="pal-action" onclick="openEmpM('material')">+ Materiel</button>
+          </div>
+          <div class="pal-lbl">Træk materiel ind på opgave eller hold</div>
+          <div class="pal-chips" id="${pid}-materials"></div>
+        </div>
+        <div class="pal-section">
+          <div class="pal-section-head">
+            <div class="pal-title">Hold</div>
+            <button class="pal-action" onclick="addTeam()">+ Hold</button>
+          </div>
+          <div class="pal-lbl">Træk ressourcer hertil, eller træk hele holdet på opgaven</div>
+          <div class="pal-chips" id="${pid}-teams"></div>
+        </div>
+      </div>`;
+    const empBox=document.getElementById(pid+'-employees');
+    const matBox=document.getElementById(pid+'-materials');
+    const teamBox=document.getElementById(pid+'-teams');
+    if(!empBox||!matBox||!teamBox)return;
+    emps.forEach(e=>{
+      const chip=document.createElement('div');
+      chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
+      chip.draggable=true;
+      chip.style.cssText=`background:${e.color}22;color:${e.color};border-color:${e.color}44`;
+      chip.title=empHasConflict(e.id)?'Dobbeltbooket - højreklik for at skifte farve':'Højreklik for at skifte farve';
+      chip.textContent=e.id;
+      chip.addEventListener('dragstart',ev=>palDS(ev,e.id));
+      chip.addEventListener('contextmenu',ev=>{
+        ev.preventDefault();
+        openColorPicker(ev,'emp',e.id,nc=>{e.color=nc;render();showToast(`${e.id} farve opdateret`)});
+      });
+      (resourceKind(e)==='material'?matBox:empBox).appendChild(chip);
+    });
+    teams.forEach(team=>{
+      const box=document.createElement('div');
+      box.className='pal-team';
+      box.draggable=true;
+      box.title='Træk holdet ind på en opgave';
+      box.addEventListener('dragstart',ev=>teamDS(ev,team.id));
+      box.addEventListener('dragover',ev=>{ev.preventDefault();box.classList.add('drag-over')});
+      box.addEventListener('dragleave',()=>box.classList.remove('drag-over'));
+      box.addEventListener('drop',ev=>{
+        ev.preventDefault();ev.stopPropagation();box.classList.remove('drag-over');
+        if(!dragEid)return;
+        addEmpToTeam(team.id,dragEid);
+      });
+      const name=document.createElement('input');
+      name.className='pal-team-name';
+      name.value=team.name;
+      name.title='Ret holdnavn';
+      name.addEventListener('click',ev=>ev.stopPropagation());
+      name.addEventListener('mousedown',ev=>ev.stopPropagation());
+      name.addEventListener('dragstart',ev=>ev.preventDefault());
+      name.addEventListener('change',()=>renameTeam(team.id,name.value));
+      name.addEventListener('blur',()=>renameTeam(team.id,name.value));
+      name.addEventListener('keydown',ev=>{if(ev.key==='Enter')name.blur()});
+      box.appendChild(name);
+      const del=document.createElement('button');
+      del.className='pal-team-del';
+      del.type='button';
+      del.textContent='×';
+      del.title='Slet hold';
+      del.addEventListener('click',ev=>deleteTeam(ev,team.id));
+      box.appendChild(del);
+      team.members.forEach(eid=>{
+        const emp=empBy(eid);if(!emp)return;
+        const member=document.createElement('span');
+        member.className='pal-team-member';
+        member.style.cssText=`background:${emp.color}22;color:${emp.color};border:1px solid ${emp.color}44`;
+        member.innerHTML=`${eid}<span class="cx" onclick="removeEmpFromTeam(event,${team.id},'${eid}')">×</span>`;
+        box.appendChild(member);
+      });
+      if(!team.members.length){
+        const empty=document.createElement('span');
+        empty.className='pal-team-member';
+        empty.style.cssText='background:var(--s3);color:var(--t3);border:1px dashed var(--b2)';
+        empty.textContent='Slip her';
+        box.appendChild(empty);
+      }
+      teamBox.appendChild(box);
+    });
+  });
+}
+
 function addTeam(){
   teams.push({id:teamSeq++,name:`Hold ${teamSeq-1}`,members:[]});
   renderPalette();
@@ -1259,6 +1366,14 @@ function removeEmpFromTeam(ev,teamId,eid){
   const team=teams.find(t=>t.id===teamId);
   if(!team)return;
   team.members=team.members.filter(id=>id!==eid);
+  renderPalette();
+  saveState();
+}
+function renameTeam(teamId,name){
+  const team=teams.find(t=>t.id===teamId);
+  if(!team)return;
+  const next=(name||'').trim();
+  team.name=next||`Hold ${team.id}`;
   renderPalette();
   saveState();
 }
@@ -2126,9 +2241,18 @@ function openTaskM(preselPid){editTid=null;document.getElementById('tm-name').va
 function openTaskEdit(id){const t=taskBy(id);if(!t)return;editTid=id;document.getElementById('tm-name').value=t.name;document.getElementById('tm-s').value=t.startDate;document.getElementById('tm-e').value=t.endDate;const sel=document.getElementById('tm-proj');sel.innerHTML=projs.map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');document.getElementById('mbg-task').classList.add('on')}
 function closeTaskM(){document.getElementById('mbg-task').classList.remove('on')}
 function saveTask(){const name=document.getElementById('tm-name').value.trim(),pid=parseInt(document.getElementById('tm-proj').value),s=document.getElementById('tm-s').value,e=document.getElementById('tm-e').value;if(!name||!s||!e)return;if(editTid){const t=taskBy(editTid);if(t){t.name=name;t.projId=pid;t.startDate=s;t.endDate=e}showToast('Opgave opdateret')}else{tasks.push({id:tseq++,projId:pid,name,startDate:s,endDate:e,staff:[]});showToast('Opgave oprettet')}closeTaskM();render()}
-function openEmpM(){selEC=EP[0];document.getElementById('em-n').value='';buildECR();document.getElementById('mbg-emp').classList.add('on');setTimeout(()=>document.getElementById('em-n').focus(),50)}
+function openEmpM(type='employee'){
+  resourceType=type==='material'?'material':'employee';
+  selEC=EP[0];
+  document.getElementById('em-n').value='';
+  document.querySelector('#mbg-emp h3').textContent=resourceType==='material'?'Materiel':'Medarbejder';
+  document.querySelector('#mbg-emp label').textContent=resourceType==='material'?'Navn / materiel':'Initialer / navn';
+  buildECR();
+  document.getElementById('mbg-emp').classList.add('on');
+  setTimeout(()=>document.getElementById('em-n').focus(),50);
+}
 function closeEmpM(){document.getElementById('mbg-emp').classList.remove('on')}
-function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;emps.push({id:name,color:selEC});closeEmpM();render();showToast(`${name} tilføjet`)}
+function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;emps.push({id:name,color:selEC,type:resourceType});closeEmpM();render();showToast(`${name} tilføjet`)}
 function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class="sw ${selC===c.id?'on':''}" style="background:${c.bg};border-color:${c.tx}" data-cid="${c.id}" onclick="selC='${c.id}';document.querySelectorAll('#${id} .sw').forEach(s=>s.classList.toggle('on',s.dataset.cid==='${c.id}'))"></div>`).join('')}
 function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div class="sw ${selEC===c?'on':''}" style="background:${c}33;border-color:${c}" data-c="${c}" onclick="selEC='${c}';document.querySelectorAll('#em-cr .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==='${c}'))"></div>`).join('')}
 
@@ -2155,7 +2279,7 @@ function renderMyWeek(){
       ts.forEach(task=>{
         const rel=mwPerson?task.staff.filter(x=>x===mwPerson):task.staff;
         const card=document.createElement('div');card.className='mw-card';
-        card.style.cssText=`background:${c.bg};border-left-color:${c.tx}`;
+        card.style.cssText=`background:${c.tx}28;border-left-color:${c.tx};border:1px solid ${c.tx}44`;
         card.innerHTML=`<div class="mw-tm">${task.name}</div><div class="mw-chips">${rel.map(eid=>{const emp=empBy(eid);return emp?`<div class="mw-ec" style="background:${emp.color}22;color:${emp.color}">${eid}</div>`:''}).join('')}</div>`;
         grp.appendChild(card);
       });
