@@ -711,6 +711,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="ci orange" id="ctx-passive-btn" onclick="ctxTogglePassive()">◯ Markér passiv</div>
   <div class="cs"></div>
   <div class="ci" id="ctx-archive-btn" onclick="ctxToggleArchive()">📦 Arkivér projekt</div>
+  <div class="ci red" id="ctx-delete-archived-btn" onclick="ctxDelProj()" style="display:none">✕ Slet fra arkiv</div>
   <div class="ci red" onclick="ctxDelProj()">✕ Slet projekt</div>
 </div>
 
@@ -2630,7 +2631,9 @@ function openCtxProj(e,pid){
   ctxPid=pid;const proj=projBy(pid);
   document.getElementById('ctx-hold-btn').textContent=proj?.status==='hold'?'▶ Fjern hold':'⏸ Sæt på hold';
   document.getElementById('ctx-passive-btn').textContent=proj?.status==='passive'?'● Gør aktiv':'◯ Markér passiv';
-  document.getElementById('ctx-archive-btn').textContent=proj?.status==='archived'?'📤 Gendан fra arkiv':'📦 Arkivér projekt';
+  document.getElementById('ctx-archive-btn').textContent=proj?.status==='archived'?'📤 Gendan fra arkiv':'📦 Arkivér projekt';
+  const delArcBtn=document.getElementById('ctx-delete-archived-btn');
+  if(delArcBtn)delArcBtn.style.display=proj?.status==='archived'?'flex':'none';
   const m=document.getElementById('ctx-proj');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.classList.add('on');
   setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10);
 }
