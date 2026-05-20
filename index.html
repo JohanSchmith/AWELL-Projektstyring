@@ -4,12 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Disponering — Awell</title>
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#5b8fff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Disponering">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -97,6 +91,28 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .status-pill{font-size:8px;font-family:'DM Mono',monospace;border-radius:3px;padding:1px 5px;font-weight:700;flex-shrink:0}
 .sp-hold{background:#ff9f4322;color:var(--warn);border:1px solid #ff9f4344}
 .sp-passive{background:#52526a22;color:var(--t3);border:1px solid var(--b2)}
+.sp-archived{background:#52526a22;color:var(--t3);border:1px solid var(--b2)}
+.proj-drag-handle{display:flex;flex-direction:column;gap:2px;cursor:grab;padding:2px 2px;flex-shrink:0;opacity:.25;transition:opacity .15s}
+.proj-drag-handle:hover{opacity:.8}
+.proj-drag-handle span{display:block;width:12px;height:2px;background:var(--t2);border-radius:1px}
+.sb-proj.drag-over-top{border-top:2px solid var(--acc)}
+.sb-proj.drag-over-bot{border-bottom:2px solid var(--acc)}
+.sb-proj.dragging-proj{opacity:.35}
+.sort-dropdown{position:relative}
+.sort-btn{background:var(--s3);border:1px solid var(--b1);color:var(--t3);border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;height:22px;padding:0 7px;display:flex;align-items:center;gap:4px;transition:all .15s}
+.sort-btn:hover{border-color:var(--acc);color:var(--acc)}
+.sort-btn.active{border-color:var(--acc);color:var(--acc)}
+.sort-menu{position:absolute;right:0;top:26px;width:160px;background:var(--s3);border:1px solid var(--b2);border-radius:8px;padding:4px;z-index:800;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.sort-menu.open{display:block}
+.sort-item{width:100%;height:28px;padding:0 9px;border:none;background:transparent;color:var(--t2);border-radius:5px;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;text-align:left;cursor:pointer;display:flex;align-items:center;gap:6px}
+.sort-item:hover{background:var(--b1);color:var(--t1)}
+.sort-item.on{color:var(--acc)}
+.sb-archive-toggle{height:36px;display:flex;align-items:center;padding:0 12px;border-top:1px solid var(--b1);flex-shrink:0;cursor:pointer;gap:7px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;transition:color .15s;user-select:none}
+.sb-archive-toggle:hover{color:var(--t1)}
+.sb-archive-toggle .arc-count{background:var(--s3);border-radius:4px;padding:1px 5px;font-size:8px}
+.sb-archive-section{background:var(--bg);border-top:1px solid var(--b1)}
+.sb-archive-proj{height:var(--row-h);display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--b1);gap:7px;opacity:.55;background:var(--bg)}
+.sb-archive-proj:hover{opacity:.8;background:var(--s1);cursor:pointer}
 .sb-task{height:var(--task-h);display:flex;align-items:center;padding:0 10px 0 28px;border-bottom:1px solid var(--b1);cursor:pointer;gap:7px;background:var(--s1);transition:background .1s}
 .sb-task:hover{background:var(--s2)}
 .sb-task.selected{background:rgba(91,143,255,.1);border-left:2px solid var(--acc)}
@@ -565,9 +581,25 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="sidebar">
     <div class="sb-head">
       <span class="sb-lbl">Projekter &amp; opgaver</span>
-      <button class="pal-action" onclick="openProjM()">+ Projekt</button>
+      <div style="display:flex;gap:5px;align-items:center">
+        <div class="sort-dropdown" id="sort-dropdown">
+          <button class="sort-btn" id="sort-btn" onclick="toggleSortMenu(event)" title="Sortering">&#x21C5; SORTER</button>
+          <div class="sort-menu" id="sort-menu">
+            <button class="sort-item on" id="sort-manual" onclick="setSortMode('manual')">&#x2630; Manuel</button>
+            <button class="sort-item" id="sort-num" onclick="setSortMode('num')"># Projektnummer</button>
+            <button class="sort-item" id="sort-name" onclick="setSortMode('name')">A Projektnavn</button>
+            <button class="sort-item" id="sort-status" onclick="setSortMode('status')">&#x25CF; Status</button>
+          </div>
+        </div>
+        <button class="pal-action" onclick="openProjM()">+ Projekt</button>
+      </div>
     </div>
     <div class="sb-rows" id="sb-rows"></div>
+    <div class="sb-archive-toggle" id="sb-archive-toggle" onclick="toggleArchiveView()">
+      <span>&#x1F4E6;</span><span>Arkiv</span><span class="arc-count" id="arc-count">0</span>
+      <span style="margin-left:auto;font-size:10px" id="arc-arrow">&#x25BC;</span>
+    </div>
+    <div id="sb-archive-section" style="display:none;overflow-y:auto;max-height:180px"></div>
     <div class="palette" id="palette-wrap-plan">
       <div class="pal-lbl">Træk medarbejdere, materiel eller hold ind på opgave -></div>
       <div class="pal-chips" id="palette-plan"></div>
@@ -678,6 +710,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="ci orange" id="ctx-hold-btn" onclick="ctxToggleHold()">⏸ Sæt på hold</div>
   <div class="ci orange" id="ctx-passive-btn" onclick="ctxTogglePassive()">◯ Markér passiv</div>
   <div class="cs"></div>
+  <div class="ci" id="ctx-archive-btn" onclick="ctxToggleArchive()">📦 Arkivér projekt</div>
   <div class="ci red" onclick="ctxDelProj()">✕ Slet projekt</div>
 </div>
 
@@ -826,6 +859,9 @@ let emps=[
   {id:'LTF',color:'#01abc2'},{id:'MOL',color:'#c44569'},
 ];
 let projs=[],tasks=[],comments=[],vacations=[];
+let projSortMode='manual'; // 'manual'|'num'|'name'|'status'
+let showArchive=false;
+let projDragSrcId=null;
 let teams=[];
 // vacations: {id, empId, from, to, type:'ferie'|'fri'}
 let collapsed=new Set();
@@ -1191,7 +1227,18 @@ function renderSidebar(days,cfg){
   const{ctids}=computeConflicts();
   const rows=document.getElementById('sb-rows');
   rows.innerHTML='';
-  projs.forEach(proj=>{
+
+  // Ensure all projs have order
+  projs.forEach((p,i)=>{if(p.order==null)p.order=i;});
+
+  // Active (non-archived) projs, sorted
+  let visible=projs.filter(p=>p.status!=='archived');
+  if(projSortMode==='num') visible=[...visible].sort((a,b)=>String(a.num).localeCompare(String(b.num),undefined,{numeric:true}));
+  else if(projSortMode==='name') visible=[...visible].sort((a,b)=>a.name.localeCompare(b.name,'da'));
+  else if(projSortMode==='status'){const ord={active:0,hold:1,passive:2};visible=[...visible].sort((a,b)=>(ord[a.status]??3)-(ord[b.status]??3));}
+  else visible=[...visible].sort((a,b)=>(a.order??0)-(b.order??0));
+
+  visible.forEach(proj=>{
     const c=pcm[proj.colorId]||PC[7];
     const ts=tasksOf(proj.id);
     const isOpen=!collapsed.has(proj.id);
@@ -1201,25 +1248,79 @@ function renderSidebar(days,cfg){
     else if(proj.status==='passive')sp='<div class="status-pill sp-passive">PASSIV</div>';
     const pr=document.createElement('div');
     pr.className='sb-proj'+(proj.status==='passive'?' passive':proj.status==='hold'?' hold':'');
+    pr.dataset.pid=proj.id;
     pr.innerHTML=`
-      <div class="caret ${isOpen?'open':''}">▶</div>
+      ${projSortMode==='manual'?'<div class="proj-drag-handle" title="Træk for at sortere"><span></span><span></span><span></span></div>':''}
+      <div class="caret ${isOpen?'open':''}">&#x25B6;</div>
       <div class="pdot" style="background:${c.tx}" title="Skift farve" data-pid="${proj.id}"></div>
       <div class="plbl"><div class="pnum">${proj.num}</div><div class="pname">${proj.name}</div></div>
       ${sp}
       ${pcnt?`<div class="comment-badge">${pcnt}</div>`:''}
       <div class="pbadge">${ts.length}</div>`;
+
     // color dot
     pr.querySelector('.pdot').addEventListener('click',e=>{
       e.stopPropagation();
-      openColorPicker(e,'proj',proj.id,nc=>{proj.colorId=nc;render();showToast('Farve opdateret')});
+      openColorPicker(e,'proj',proj.id,nc=>{proj.colorId=nc;render();showToast('Farve opdateret');});
     });
-    // entire row (except pdot) toggles collapse
+    // caret / row click
     pr.addEventListener('click',e=>{
-      if(e.target.closest('.pdot'))return;
+      if(e.target.closest('.pdot')||e.target.closest('.proj-drag-handle'))return;
       if(collapsed.has(proj.id))collapsed.delete(proj.id);else collapsed.add(proj.id);
       renderSidebar(days,cfg);renderGantt(days,cfg);
     });
-    pr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxProj(e,proj.id)});
+    pr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxProj(e,proj.id);});
+
+    // drag-to-reorder (only in manual mode)
+    if(projSortMode==='manual'){
+      const handle=pr.querySelector('.proj-drag-handle');
+      if(handle){
+        handle.addEventListener('mousedown',e=>{
+          e.stopPropagation();
+          projDragSrcId=proj.id;
+          pr.classList.add('dragging-proj');
+          const onMove=mv=>{
+            document.querySelectorAll('.sb-proj').forEach(el=>{
+              el.classList.remove('drag-over-top','drag-over-bot');
+              const r=el.getBoundingClientRect();
+              const mid=r.top+r.height/2;
+              if(el.dataset.pid&&el.dataset.pid!=proj.id){
+                if(mv.clientY>=r.top&&mv.clientY<mid) el.classList.add('drag-over-top');
+                else if(mv.clientY>=mid&&mv.clientY<=r.bottom) el.classList.add('drag-over-bot');
+              }
+            });
+          };
+          const onUp=()=>{
+            document.removeEventListener('mousemove',onMove);
+            document.removeEventListener('mouseup',onUp);
+            pr.classList.remove('dragging-proj');
+            const overTop=document.querySelector('.sb-proj.drag-over-top');
+            const overBot=document.querySelector('.sb-proj.drag-over-bot');
+            const targetEl=overTop||overBot;
+            document.querySelectorAll('.sb-proj').forEach(el=>el.classList.remove('drag-over-top','drag-over-bot'));
+            if(targetEl&&projDragSrcId!=null){
+              const targetId=parseInt(targetEl.dataset.pid);
+              const src=projBy(projDragSrcId);
+              const tgt=projBy(targetId);
+              if(src&&tgt){
+                // Re-order: rebuild order values
+                let ordered=projs.filter(p=>p.status!=='archived').sort((a,b)=>(a.order??0)-(b.order??0));
+                ordered=ordered.filter(p=>p.id!==src.id);
+                const ti=ordered.findIndex(p=>p.id===tgt.id);
+                const insertAt=overBot?ti+1:ti;
+                ordered.splice(insertAt,0,src);
+                ordered.forEach((p,i)=>p.order=i);
+                histSnapshot();
+                renderSidebar(days,cfg);renderGantt(days,cfg);
+              }
+            }
+            projDragSrcId=null;
+          };
+          document.addEventListener('mousemove',onMove);
+          document.addEventListener('mouseup',onUp);
+        });
+      }
+    }
     rows.appendChild(pr);
     if(isOpen){
       ts.forEach(task=>{
@@ -1229,14 +1330,66 @@ function renderSidebar(days,cfg){
         tr.className='sb-task'+(selectedTid===task.id?' selected':'');
         tr.innerHTML=`<div class="tdot" style="background:${c.tx}"></div>
           <div class="tname-sb">${task.name}</div>
-          ${tcnt?`<div class="comment-badge">${tcnt}</div>`:''}
+          ${tcnt?`<div class="comment-badge">${tcnt}`:``}
           ${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
         tr.addEventListener('click',()=>scrollToAndOpen(task.id));
-        tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+        tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
         rows.appendChild(tr);
       });
     }
   });
+
+  // Archive section
+  const archived=projs.filter(p=>p.status==='archived');
+  const arcCount=document.getElementById('arc-count');
+  if(arcCount)arcCount.textContent=archived.length;
+  const arcSection=document.getElementById('sb-archive-section');
+  if(arcSection){
+    arcSection.innerHTML='';
+    if(showArchive){
+      archived.forEach(proj=>{
+        const c=pcm[proj.colorId]||PC[7];
+        const el=document.createElement('div');
+        el.className='sb-archive-proj';
+        el.innerHTML=`<div class="pdot" style="background:${c.tx}"></div><div class="plbl"><div class="pnum">${proj.num}</div><div class="pname">${proj.name}</div></div><div class="status-pill sp-archived">ARKIV</div>`;
+        el.addEventListener('contextmenu',e=>{e.preventDefault();openCtxProj(e,proj.id);});
+        arcSection.appendChild(el);
+      });
+    }
+  }
+}
+
+// ── PROJEKT SORT & ARCHIVE ────────────────────────────────
+function toggleSortMenu(e){
+  e.stopPropagation();
+  const m=document.getElementById('sort-menu');
+  m.classList.toggle('open');
+  setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('open'),{once:true}),10);
+}
+function setSortMode(mode){
+  projSortMode=mode;
+  document.querySelectorAll('.sort-item').forEach(el=>el.classList.remove('on'));
+  const el=document.getElementById('sort-'+mode);
+  if(el)el.classList.add('on');
+  const btn=document.getElementById('sort-btn');
+  if(btn)btn.classList.toggle('active',mode!=='manual');
+  document.getElementById('sort-menu').classList.remove('open');
+  render();
+}
+function toggleArchiveView(){
+  showArchive=!showArchive;
+  const sec=document.getElementById('sb-archive-section');
+  const arrow=document.getElementById('arc-arrow');
+  if(sec)sec.style.display=showArchive?'block':'none';
+  if(arrow)arrow.textContent=showArchive?'▲':'▼';
+  render();
+}
+function ctxToggleArchive(){
+  const p=projBy(ctxPid);
+  if(!p)return;
+  if(p.status==='archived'){p.status='active';showToast(`${p.name} gendannet`);}
+  else{p.status='archived';showToast(`${p.name} arkiveret`);}
+  render();
 }
 
 // ── PALETTE ───────────────────────────────────────────────
@@ -1656,13 +1809,8 @@ function renderGantt(days,cfg){
   });
   head.appendChild(drow);gantt.appendChild(head);
 
-  projs.forEach(proj=>{
-    const c=pcm[proj.colorId]||PC[7];
-    const isOpen=!collapsed.has(proj.id);
-    const ts=tasksOf(proj.id);
-
-    // Project row
-    const prow=document.createElement('div');
+  const ganttProjs=projs.filter(p=>p.status!=='archived').sort((a,b)=>(a.order??0)-(b.order??0));
+  ganttProjs.forEach(proj=>{
     prow.className='g-proj-row'+(proj.status==='passive'?' passive-row':'');
     prow.style.width=totalW+'px';
     days.forEach(d=>{
@@ -2478,6 +2626,7 @@ function openCtxProj(e,pid){
   ctxPid=pid;const proj=projBy(pid);
   document.getElementById('ctx-hold-btn').textContent=proj?.status==='hold'?'▶ Fjern hold':'⏸ Sæt på hold';
   document.getElementById('ctx-passive-btn').textContent=proj?.status==='passive'?'● Gør aktiv':'◯ Markér passiv';
+  document.getElementById('ctx-archive-btn').textContent=proj?.status==='archived'?'📤 Gendан fra arkiv':'📦 Arkivér projekt';
   const m=document.getElementById('ctx-proj');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.classList.add('on');
   setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10);
 }
@@ -2495,9 +2644,9 @@ function ctxDelProj(){if(!ctxPid)return;tasks=tasks.filter(t=>t.projId!==ctxPid)
 function openProjM(){editPid=null;selC=PC[0].id;['pm-num','pm-name'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-status').value='active';buildCR('pm-cr');document.getElementById('mbg-proj').classList.add('on');setTimeout(()=>document.getElementById('pm-num').focus(),50)}
 function openProjEdit(id){const p=projBy(id);if(!p)return;editPid=id;selC=p.colorId;document.getElementById('pm-num').value=p.num;document.getElementById('pm-name').value=p.name;document.getElementById('pm-status').value=p.status||'active';buildCR('pm-cr');document.getElementById('mbg-proj').classList.add('on')}
 function closeProjM(){document.getElementById('mbg-proj').classList.remove('on')}
-function saveProj(){const num=document.getElementById('pm-num').value.trim(),name=document.getElementById('pm-name').value.trim(),status=document.getElementById('pm-status').value;if(!name)return;if(editPid){const p=projBy(editPid);if(p){p.num=num;p.name=name;p.colorId=selC;p.status=status}showToast('Projekt opdateret')}else{projs.push({id:pseq++,num,name,colorId:selC,status});showToast('Projekt oprettet')}closeProjM();render()}
-function openTaskM(preselPid){editTid=null;document.getElementById('tm-name').value='';document.getElementById('tm-s').value=ky(new Date());document.getElementById('tm-e').value=ky(addWD(new Date(),4));const sel=document.getElementById('tm-proj');sel.innerHTML=projs.map(p=>`<option value="${p.id}" ${p.id===preselPid?'selected':''}>${p.num} – ${p.name}</option>`).join('');document.getElementById('mbg-task').classList.add('on');setTimeout(()=>document.getElementById('tm-name').focus(),50)}
-function openTaskEdit(id){const t=taskBy(id);if(!t)return;editTid=id;document.getElementById('tm-name').value=t.name;document.getElementById('tm-s').value=t.startDate;document.getElementById('tm-e').value=t.endDate;const sel=document.getElementById('tm-proj');sel.innerHTML=projs.map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');document.getElementById('mbg-task').classList.add('on')}
+function saveProj(){const num=document.getElementById('pm-num').value.trim(),name=document.getElementById('pm-name').value.trim(),status=document.getElementById('pm-status').value;if(!name)return;if(editPid){const p=projBy(editPid);if(p){p.num=num;p.name=name;p.colorId=selC;p.status=status}showToast('Projekt opdateret')}else{const maxOrd=projs.reduce((m,p)=>Math.max(m,p.order??0),0);projs.push({id:pseq++,num,name,colorId:selC,status,order:maxOrd+1});showToast('Projekt oprettet')}closeProjM();render()}
+function openTaskM(preselPid){editTid=null;document.getElementById('tm-name').value='';document.getElementById('tm-s').value=ky(new Date());document.getElementById('tm-e').value=ky(addWD(new Date(),4));const sel=document.getElementById('tm-proj');sel.innerHTML=projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===preselPid?'selected':''}>${p.num} – ${p.name}</option>`).join('');document.getElementById('mbg-task').classList.add('on');setTimeout(()=>document.getElementById('tm-name').focus(),50)}
+function openTaskEdit(id){const t=taskBy(id);if(!t)return;editTid=id;document.getElementById('tm-name').value=t.name;document.getElementById('tm-s').value=t.startDate;document.getElementById('tm-e').value=t.endDate;const sel=document.getElementById('tm-proj');sel.innerHTML=projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');document.getElementById('mbg-task').classList.add('on')}
 function closeTaskM(){document.getElementById('mbg-task').classList.remove('on')}
 function saveTask(){const name=document.getElementById('tm-name').value.trim(),pid=parseInt(document.getElementById('tm-proj').value),s=document.getElementById('tm-s').value,e=document.getElementById('tm-e').value;if(!name||!s||!e)return;if(editTid){const t=taskBy(editTid);if(t){t.name=name;t.projId=pid;t.startDate=s;t.endDate=e}showToast('Opgave opdateret')}else{tasks.push({id:tseq++,projId:pid,name,startDate:s,endDate:e,staff:[]});showToast('Opgave oprettet')}closeTaskM();render()}
 function openEmpM(type='employee'){
@@ -3075,15 +3224,6 @@ document.addEventListener('keydown',e=>{
 });
 // defer so gantt-wrap has a real clientWidth
 requestAnimationFrame(()=>requestAnimationFrame(()=>{render();histSnapshot();initCloud()}));
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
-      .then(reg => console.log("SW registered:", reg.scope))
-      .catch(err => console.warn("SW registration failed:", err));
-  });
-}
 </script>
 </body>
 </html>
