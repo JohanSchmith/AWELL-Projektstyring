@@ -71,8 +71,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 
 /* ── LAYOUT ── */
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden}
-.sb-main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden;height:100%}
+.sb-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .sb-rows{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
 .sb-head{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--b1);flex-shrink:0}
 .sb-lbl{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
@@ -109,10 +109,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .sort-item{width:100%;height:28px;padding:0 9px;border:none;background:transparent;color:var(--t2);border-radius:5px;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;text-align:left;cursor:pointer;display:flex;align-items:center;gap:6px}
 .sort-item:hover{background:var(--b1);color:var(--t1)}
 .sort-item.on{color:var(--acc)}
-.sb-archive-toggle{height:36px;display:flex;align-items:center;padding:0 12px;border-top:1px solid var(--b1);flex-shrink:0;cursor:pointer;gap:7px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;transition:color .15s;user-select:none}
+.sb-archive-toggle{height:36px;display:flex;align-items:center;padding:0 12px;border-top:1px solid var(--b1);flex-shrink:0;cursor:pointer;gap:7px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;transition:color .15s;user-select:none;width:100%;box-sizing:border-box}
 .sb-archive-toggle:hover{color:var(--t1)}
 .sb-archive-toggle .arc-count{background:var(--s3);border-radius:4px;padding:1px 5px;font-size:8px}
-.sb-archive-section{background:var(--bg);border-top:1px solid var(--b1)}
+.sb-archive-section{background:var(--bg);border-top:1px solid var(--b1);flex-shrink:0;overflow-y:auto;max-height:35vh}
 .sb-archive-proj{height:var(--row-h);display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--b1);gap:7px;opacity:.55;background:var(--bg)}
 .sb-archive-proj:hover{opacity:.8;background:var(--s1);cursor:pointer}
 .sb-task{height:var(--task-h);display:flex;align-items:center;padding:0 10px 0 28px;border-bottom:1px solid var(--b1);cursor:pointer;gap:7px;background:var(--s1);transition:background .1s}
@@ -602,7 +602,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <span>&#x1F4E6;</span><span>Arkiv</span><span class="arc-count" id="arc-count">0</span>
       <span style="margin-left:auto;font-size:10px" id="arc-arrow">&#x25BC;</span>
     </div>
-    <div id="sb-archive-section" style="display:none;overflow-y:auto;max-height:180px"></div>
+    <div id="sb-archive-section" class="sb-archive-section" style="display:none"></div>
     </div>
     <div class="palette" id="palette-wrap-plan">
       <div class="pal-lbl">Træk medarbejdere, materiel eller hold ind på opgave -></div>
