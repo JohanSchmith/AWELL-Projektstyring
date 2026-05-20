@@ -1811,6 +1811,10 @@ function renderGantt(days,cfg){
 
   const ganttProjs=projs.filter(p=>p.status!=='archived').sort((a,b)=>(a.order??0)-(b.order??0));
   ganttProjs.forEach(proj=>{
+    const c=pcm[proj.colorId]||PC[7];
+    const ts=tasksOf(proj.id);
+    const isOpen=!collapsed.has(proj.id);
+    const prow=document.createElement('div');
     prow.className='g-proj-row'+(proj.status==='passive'?' passive-row':'');
     prow.style.width=totalW+'px';
     days.forEach(d=>{
