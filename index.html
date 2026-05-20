@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Disponering — Awell</title>
+<title>Awell Disponering</title>
 <meta name="theme-color" content="#1a75b5">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
@@ -72,7 +72,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 
 /* ── LAYOUT ── */
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden;height:100%}
+.sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden;height:calc(100vh - 48px - 86px)}
 .sb-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .sb-rows{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
 .sb-head{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--b1);flex-shrink:0}
