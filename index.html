@@ -1347,9 +1347,12 @@ function renderSidebar(days,cfg){
   // Archive section
   const archived=projs.filter(p=>p.status==='archived');
   const arcCount=document.getElementById('arc-count');
-  if(arcCount)arcCount.textContent=archived.length;
   const arcSection=document.getElementById('sb-archive-section');
+  const arcArrow=document.getElementById('arc-arrow');
+  if(arcCount)arcCount.textContent=archived.length;
+  if(arcArrow)arcArrow.textContent=showArchive?'▲':'▼';
   if(arcSection){
+    arcSection.style.display=showArchive&&archived.length>0?'block':'none';
     arcSection.innerHTML='';
     if(showArchive){
       archived.forEach(proj=>{
@@ -1383,9 +1386,7 @@ function setSortMode(mode){
 }
 function toggleArchiveView(){
   showArchive=!showArchive;
-  const sec=document.getElementById('sb-archive-section');
   const arrow=document.getElementById('arc-arrow');
-  if(sec)sec.style.display=showArchive?'block':'none';
   if(arrow)arrow.textContent=showArchive?'▲':'▼';
   render();
 }
