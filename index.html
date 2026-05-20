@@ -275,13 +275,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-btn-a:hover{filter:brightness(1.12)}
 
 /* ── PALETTE ── */
-.palette{background:var(--s2);border-top:1px solid var(--b1);padding:7px 12px;flex-shrink:0}
+.palette{position:fixed;left:0;right:0;bottom:0;background:var(--s2);border-top:1px solid var(--b1);padding:8px 12px 10px;z-index:80;box-shadow:0 -12px 34px rgba(0,0,0,.35)}
 .pal-lbl{font-size:8px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
-.pal-chips{display:flex;flex-wrap:wrap;gap:3px}
+.pal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.pal-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
+.pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer}
+.pal-action:hover{border-color:var(--acc);color:var(--acc)}
+.pal-body{display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1.15fr);gap:12px;align-items:start}
+.pal-section{min-width:0}
+.pal-chips{display:flex;flex-wrap:wrap;gap:4px;min-height:25px}
 .pal-chip{height:22px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:grab;user-select:none;border:1px solid transparent;display:flex;align-items:center;transition:filter .15s,transform .1s}
 .pal-chip:hover{filter:brightness(1.2);transform:translateY(-1px)}
 .pal-chip:active{cursor:grabbing}
 .pal-chip.has-conflict{box-shadow:0 0 0 2px var(--warn)}
+.pal-team{min-height:25px;padding:3px 6px;border:1px dashed var(--b2);border-radius:7px;background:rgba(255,255,255,.025);display:flex;align-items:center;gap:5px;flex-wrap:wrap;cursor:grab}
+.pal-team:hover{border-color:var(--acc)}
+.pal-team.drag-over{background:rgba(91,143,255,.12);border-color:var(--acc)}
+.pal-team-name{font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:var(--t1);margin-right:2px}
+.pal-team-del{height:18px;width:18px;border-radius:4px;border:none;background:rgba(210,55,55,.14);color:#ff7070;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+.pal-team-del:hover{background:rgba(210,55,55,.28)}
+.pal-team-member{height:18px;padding:0 5px;border-radius:4px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:3px}
+.pal-team-member .cx{font-size:8px;opacity:.55;cursor:pointer}
+.pal-team-member .cx:hover{opacity:1}
+#vplan,#vflip{padding-bottom:86px}
+@media(max-width:760px){.pal-body{grid-template-columns:1fr}.palette{max-height:42vh;overflow:auto}#vplan,#vflip{padding-bottom:150px}}
 
 /* ── MIN UGE ── */
 .mw{flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column}
@@ -504,7 +521,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
         <button class="more-item" onclick="exportData();closeMoreMenu()">⬇ Eksportér</button>
         <button class="more-item" onclick="document.getElementById('import-file').click();closeMoreMenu()">⬆ Importér</button>
         <div class="more-sep"></div>
-        <button class="more-item" onclick="openEmpM();closeMoreMenu()">+ Medarbejder</button>
+        <button class="more-item" onclick="openEmpM();closeMoreMenu()">+ Medarbejder/materiel</button>
         <button class="more-item" onclick="resetAllData();closeMoreMenu()">↺ Nulstil data</button>
         <button class="more-item" id="logout-btn" onclick="signOut();closeMoreMenu()" style="display:none">Log ud</button>
       </div>
@@ -524,7 +541,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     </div>
     <div class="sb-rows" id="sb-rows"></div>
     <div class="palette" id="palette-wrap-plan">
-      <div class="pal-lbl">Træk medarbejder ind på opgave →</div>
+      <div class="pal-lbl">Træk medarbejdere, materiel eller hold ind på opgave -></div>
       <div class="pal-chips" id="palette-plan"></div>
     </div>
   </div>
@@ -552,12 +569,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="flip-inner">
     <div class="flip-sidebar">
       <div class="flip-sb-head">
-        <span class="sb-lbl">Medarbejdere</span>
-        <button class="btn btn-g" style="font-size:10px;height:22px;padding:0 8px" onclick="openEmpM()">+ Medarbejder</button>
+        <span class="sb-lbl">Medarbejdere og materiel</span>
+        <button class="btn btn-g" style="font-size:10px;height:22px;padding:0 8px" onclick="openEmpM()">+ Ressource</button>
       </div>
       <div class="flip-sb-rows" id="flip-sb-rows"></div>
       <div class="palette" id="palette-wrap-flip">
-        <div class="pal-lbl">Træk medarbejder ind på opgave →</div>
+        <div class="pal-lbl">Træk medarbejdere, materiel eller hold ind på opgave -></div>
         <div class="pal-chips" id="palette-flip"></div>
       </div>
     </div>
@@ -673,8 +690,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 <!-- EMP MODAL -->
 <div class="mbg" id="mbg-emp">
   <div class="modal">
-    <h3>Medarbejder / team</h3>
-    <div class="fg"><label>Initialer / navn</label><input id="em-n" placeholder="TFU" maxlength="20"></div>
+    <h3>Medarbejder og materiel</h3>
+    <div class="fg"><label>Initialer / navn / materiel</label><input id="em-n" placeholder="TFU" maxlength="20"></div>
     <div class="fg"><label>Farve</label><div class="cr" id="em-cr"></div></div>
     <div class="m-acts">
       <button class="btn btn-g" onclick="closeEmpM()">Annuller</button>
@@ -768,13 +785,14 @@ let emps=[
   {id:'LTF',color:'#01abc2'},{id:'MOL',color:'#c44569'},
 ];
 let projs=[],tasks=[],comments=[],vacations=[];
+let teams=[];
 // vacations: {id, empId, from, to, type:'ferie'|'fri'}
 let collapsed=new Set();
-let pseq=1,tseq=1,cseq=1;
+let pseq=1,tseq=1,cseq=1,teamSeq=1;
 let selC=PC[0].id,selEC=EP[0];
 let editPid=null,editTid=null,ctxPid=null,ctxTid=null;
 let conflicts={};
-let dragEid=null,dragSrcTid=null;
+let dragEid=null,dragSrcTid=null,dragEids=null;
 let rzTask=null,rzSide=null,rzStartX=0,rzStartDate=null,rzEndDate=null;
 let sbClient=null,cloudEnabled=false,cloudReady=false,cloudApplying=false,cloudSaveTimer=null,cloudChannel=null,cloudUser=null,cloudRemoteUpdatedAt=null;
 
@@ -1141,7 +1159,29 @@ function renderPalette(){
   ['palette-plan','palette-flip'].forEach(pid=>{
     const pal=document.getElementById(pid);
     if(!pal)return;
-    pal.innerHTML='';
+    const wrap=pal.closest('.palette');
+    if(wrap){
+      wrap.innerHTML=`
+        <div class="pal-head">
+          <div class="pal-title">Medarbejdere og materiel</div>
+          <button class="pal-action" onclick="addTeam()">+ Hold</button>
+        </div>
+        <div class="pal-body">
+          <div class="pal-section">
+            <div class="pal-lbl">Træk enkeltressource ind på opgave eller hold</div>
+            <div class="pal-chips" id="${pid}"></div>
+          </div>
+          <div class="pal-section">
+            <div class="pal-lbl">Hold - træk medarbejdere hertil, eller træk hele holdet på opgaven</div>
+            <div class="pal-chips" id="${pid}-teams"></div>
+          </div>
+        </div>`;
+    }
+    const chipBox=document.getElementById(pid);
+    const teamBox=document.getElementById(pid+'-teams');
+    if(!chipBox||!teamBox)return;
+    chipBox.innerHTML='';
+    teamBox.innerHTML='';
     emps.forEach(e=>{
       const chip=document.createElement('div');
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
@@ -1154,12 +1194,101 @@ function renderPalette(){
         ev.preventDefault();
         openColorPicker(ev,'emp',e.id,nc=>{e.color=nc;render();showToast(`${e.id} farve opdateret`)});
       });
-      pal.appendChild(chip);
+      chipBox.appendChild(chip);
+    });
+    teams.forEach(team=>{
+      const box=document.createElement('div');
+      box.className='pal-team';
+      box.draggable=true;
+      box.title='Træk holdet ind på en opgave';
+      box.addEventListener('dragstart',ev=>teamDS(ev,team.id));
+      box.addEventListener('dragover',ev=>{ev.preventDefault();box.classList.add('drag-over')});
+      box.addEventListener('dragleave',()=>box.classList.remove('drag-over'));
+      box.addEventListener('drop',ev=>{
+        ev.preventDefault();ev.stopPropagation();box.classList.remove('drag-over');
+        if(!dragEid)return;
+        addEmpToTeam(team.id,dragEid);
+      });
+      const name=document.createElement('span');
+      name.className='pal-team-name';
+      name.textContent=team.name;
+      box.appendChild(name);
+      const del=document.createElement('button');
+      del.className='pal-team-del';
+      del.type='button';
+      del.textContent='×';
+      del.title='Slet hold';
+      del.addEventListener('click',ev=>deleteTeam(ev,team.id));
+      box.appendChild(del);
+      team.members.forEach(eid=>{
+        const emp=empBy(eid);if(!emp)return;
+        const member=document.createElement('span');
+        member.className='pal-team-member';
+        member.style.cssText=`background:${emp.color}22;color:${emp.color};border:1px solid ${emp.color}44`;
+        member.innerHTML=`${eid}<span class="cx" onclick="removeEmpFromTeam(event,${team.id},'${eid}')">×</span>`;
+        box.appendChild(member);
+      });
+      if(!team.members.length){
+        const empty=document.createElement('span');
+        empty.className='pal-team-member';
+        empty.style.cssText='background:var(--s3);color:var(--t3);border:1px dashed var(--b2)';
+        empty.textContent='Slip her';
+        box.appendChild(empty);
+      }
+      teamBox.appendChild(box);
     });
   });
 }
 
 // ── GANTT ─────────────────────────────────────────────────
+function addTeam(){
+  teams.push({id:teamSeq++,name:`Hold ${teamSeq-1}`,members:[]});
+  renderPalette();
+  saveState();
+}
+function addEmpToTeam(teamId,eid){
+  const team=teams.find(t=>t.id===teamId);
+  if(!team||!empBy(eid))return;
+  if(!team.members.includes(eid))team.members.push(eid);
+  dragEid=null;dragEids=null;
+  renderPalette();
+  saveState();
+}
+function removeEmpFromTeam(ev,teamId,eid){
+  ev.preventDefault();ev.stopPropagation();
+  const team=teams.find(t=>t.id===teamId);
+  if(!team)return;
+  team.members=team.members.filter(id=>id!==eid);
+  renderPalette();
+  saveState();
+}
+function deleteTeam(ev,teamId){
+  ev.preventDefault();ev.stopPropagation();
+  teams=teams.filter(t=>t.id!==teamId);
+  renderPalette();
+  saveState();
+}
+function teamDS(e,teamId){
+  const team=teams.find(t=>t.id===teamId);
+  dragEids=team?[...team.members]:[];
+  dragEid=null;dragSrcTid=null;
+  e.dataTransfer.effectAllowed='copy';
+}
+function addStaffToTask(task,ids,sourceTid){
+  const clean=[...new Set((ids||[]).filter(id=>empBy(id)))];
+  if(!task||!clean.length)return false;
+  if(sourceTid&&sourceTid!==task.id){
+    const st=taskBy(sourceTid);
+    if(st)st.staff=st.staff.filter(id=>!clean.includes(id));
+  }
+  let added=0;
+  clean.forEach(id=>{
+    if(!task.staff.includes(id)){task.staff.push(id);added++}
+  });
+  if(added)showToast(clean.length>1?`${added} fra hold tilføjet`:`${clean[0]} tilføjet`);
+  return added>0;
+}
+
 function renderGantt(days,cfg){
   const gantt=document.getElementById('gantt');gantt.innerHTML='';
   const today=ky(new Date());
@@ -1265,10 +1394,19 @@ function renderGantt(days,cfg){
         dz.addEventListener('dragleave',()=>dz.classList.remove('dov'));
         dz.addEventListener('drop',e=>{
           e.preventDefault();dz.classList.remove('dov');
+          if(dragEids&&dragEids.length){
+            addStaffToTask(task,dragEids,dragSrcTid);
+            dragEid=null;dragEids=null;dragSrcTid=null;
+            saveState();
+            computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
+            if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();
+            return;
+          }
           if(!dragEid)return;
           if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
           if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
           dragEid=null;dragSrcTid=null;
+          saveState();
           computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
           if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();
         });
@@ -1294,7 +1432,7 @@ function renderGantt(days,cfg){
               chip.draggable=true;
               chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
               chip.innerHTML=`${eid}<span class="cx" onclick="rmStaffFromBar(event,${task.id},'${eid}')">×</span>`;
-              chip.addEventListener('dragstart',e2=>{e2.stopPropagation();dragEid=eid;dragSrcTid=task.id;e2.dataTransfer.effectAllowed='move';chip.style.opacity='.3';setTimeout(()=>chip.style.opacity='',0)});
+              chip.addEventListener('dragstart',e2=>{e2.stopPropagation();dragEid=eid;dragEids=null;dragSrcTid=task.id;e2.dataTransfer.effectAllowed='move';chip.style.opacity='.3';setTimeout(()=>chip.style.opacity='',0)});
               chips.appendChild(chip);
             });bar.appendChild(chips);
           }
@@ -1671,7 +1809,7 @@ function buildPopup(e){
 
   const ccnt=commentCount(popTarget.type,popTarget.id);
   const tabDefs=isTask
-    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Hold'},{id:'comments',lbl:'💬',badge:ccnt||''}]
+    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Ressourcer'},{id:'comments',lbl:'💬',badge:ccnt||''}]
     :[{id:'info',lbl:'Info'},{id:'opgaver',lbl:'Opgaver',badge:tasksOf(popTarget.id).length},{id:'comments',lbl:'💬',badge:ccnt||''}];
 
   const tabsEl=document.getElementById('pop-tabs');
@@ -1918,7 +2056,7 @@ function startRz(e,task,side,days,cfg){
 }
 
 // ── DRAG ─────────────────────────────────────────────────
-function palDS(e,eid){dragEid=eid;dragSrcTid=null;e.dataTransfer.effectAllowed='copy'}
+function palDS(e,eid){dragEid=eid;dragEids=null;dragSrcTid=null;e.dataTransfer.effectAllowed='copy'}
 function rmStaffFromBar(e,tid,eid){
   e.stopPropagation();
   const t=taskBy(tid);if(!t)return;
@@ -2114,7 +2252,7 @@ function onSearch(q){
     res.classList.add('open');return;
   }
   res.innerHTML='';
-  const sections={task:'Opgaver',proj:'Projekter',emp:'Medarbejdere'};
+  const sections={task:'Opgaver',proj:'Projekter',emp:'Medarbejdere og materiel'};
   ['proj','task','emp'].forEach(type=>{
     const group=hits.filter(h=>h.type===type);
     if(!group.length)return;
@@ -2215,6 +2353,7 @@ function importData(input){
       if(d.tasks){tasks=d.tasks;tseq=d.tseq||tseq}
       if(d.comments){comments=d.comments;cseq=d.cseq||cseq}
       if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
+      if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
       if(d.collapsed){collapsed=new Set(d.collapsed)}
       saveState();
       render();
@@ -2296,9 +2435,9 @@ function loadState(){
 
 function statePayload(){
   return {
-    emps,projs,tasks,comments,vacations,
+    emps,projs,tasks,comments,vacations,teams,
     collapsed:[...collapsed],
-    pseq,tseq,cseq,vacSeq
+    pseq,tseq,cseq,vacSeq,teamSeq
   };
 }
 
@@ -2309,6 +2448,7 @@ function applyPayload(d){
   if(d.tasks){tasks=d.tasks;tseq=d.tseq||tseq}
   if(d.comments){comments=d.comments;cseq=d.cseq||cseq}
   if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
+  if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
   if(d.collapsed){collapsed=new Set(d.collapsed)}
 }
 
@@ -2443,7 +2583,7 @@ async function saveCloudState(isInitial){
 function resetAllData(){
   if(!confirm('Nulstil alle data? Hvis du er logget ind, overskrives den fælles plan også.'))return;
   localStorage.removeItem(STORE_KEY);
-  projs=[];tasks=[];comments=[];vacations=[];collapsed=new Set();pseq=1;tseq=1;cseq=1;vacSeq=1;
+  projs=[];tasks=[];comments=[];vacations=[];teams=[];collapsed=new Set();pseq=1;tseq=1;cseq=1;vacSeq=1;teamSeq=1;
   seed();
   render();
   showToast('Data nulstillet');
