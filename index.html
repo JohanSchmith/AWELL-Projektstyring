@@ -343,7 +343,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-team-member .cx{font-size:8px;opacity:.55;cursor:pointer}
 .pal-team-member .cx:hover{opacity:1}
 #vplan,#vflip{padding-bottom:86px}
-.sidebar{padding-bottom:86px}
+/* sidebar height handled via JS */
 @media(max-width:760px){.pal-body{grid-template-columns:1fr}.palette{max-height:42vh;overflow:auto}#vplan,#vflip{padding-bottom:150px}}
 
 /* ── MIN UGE ── */
@@ -1691,6 +1691,13 @@ function initSectionDivider(divider,secA,secB,body,pid,iA,iB){
   });
 }
 
+function setSidebarHeight(paletteH){
+  const topbar=document.querySelector('.topbar');
+  const topH=topbar?topbar.offsetHeight:48;
+  const h=(window.innerHeight-topH-paletteH)+'px';
+  document.querySelectorAll('.sidebar').forEach(el=>el.style.height=h);
+}
+
 function initPaletteResize(handle,palette){
   let startY,startH;
   function onMove(e){
@@ -1699,7 +1706,7 @@ function initPaletteResize(handle,palette){
     palette.style.height=newH+'px';
     palette.style.overflow='auto';
     document.querySelectorAll('#vplan,#vflip').forEach(el=>el.style.paddingBottom=newH+'px');
-    document.querySelectorAll('.sidebar').forEach(el=>el.style.paddingBottom=newH+'px');
+    setSidebarHeight(newH);
   }
   function onUp(){
     handle.classList.remove('dragging');
@@ -3255,7 +3262,15 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();histRedo();}
 });
 // defer so gantt-wrap has a real clientWidth
-requestAnimationFrame(()=>requestAnimationFrame(()=>{render();histSnapshot();initCloud()}));
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const pal=document.querySelector('.palette');
+  setSidebarHeight(pal?pal.offsetHeight:86);
+  render();histSnapshot();initCloud();
+}));
+window.addEventListener('resize',()=>{
+  const pal=document.querySelector('.palette');
+  setSidebarHeight(pal?pal.offsetHeight:86);
+});
 </script>
 </body>
 </html>
