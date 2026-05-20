@@ -1,6 +1,6 @@
 {
   "name": "Awell Disponering",
-  "short_name": "Disponering",
+  "short_name": "",
   "description": "Disponeringsapp med realtime sync via Supabase",
   "start_url": "/",
   "display": "standalone",
