@@ -582,8 +582,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <div class="sb-head">
       <span class="sb-lbl">Projekter &amp; opgaver</span>
       <div style="display:flex;gap:5px;align-items:center">
-        <div class="sort-dropdown" id="sort-dropdown" style="flex:1">
-          <button class="sort-btn" id="sort-btn" onclick="toggleSortMenu(event)" title="Sortering" style="width:100%">&#x21C5; SORTER</button>
+        <div class="sort-dropdown" id="sort-dropdown" style="flex:1;display:flex">
+          <button class="sort-btn" id="sort-btn" onclick="toggleSortMenu(event)" title="Sortering" style="flex:1;justify-content:center">&#x21C5; SORTER</button>
           <div class="sort-menu" id="sort-menu">
             <button class="sort-item on" id="sort-manual" onclick="setSortMode('manual')">&#x2630; Manuel</button>
             <button class="sort-item" id="sort-num" onclick="setSortMode('num')"># Projektnummer</button>
@@ -591,7 +591,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
             <button class="sort-item" id="sort-status" onclick="setSortMode('status')">&#x25CF; Status</button>
           </div>
         </div>
-        <button class="pal-action" onclick="openProjM()">+ Projekt</button>
+        <button class="pal-action" onclick="openProjM()" style="flex:1;justify-content:center">+ Projekt</button>
       </div>
     </div>
     <div class="sb-rows" id="sb-rows"></div>
