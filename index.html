@@ -295,7 +295,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-chips::-webkit-scrollbar{width:4px}
 .pal-chips::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .pal-chips::-webkit-scrollbar-thumb:hover{background:var(--b3)}
-.pal-section{min-width:80px;overflow:hidden;padding:0 12px;display:flex;flex-direction:column;min-height:0;max-width:100%}
+.pal-section{min-width:120px;overflow:hidden;padding:0 12px;display:flex;flex-direction:column;min-height:0;max-width:100%}
 .pal-section:first-child{padding-left:0}
 .pal-section:last-child{padding-right:0}
 .pal-divider{width:5px;flex-shrink:0;cursor:col-resize;background:transparent;border-left:1px solid var(--b1);border-right:1px solid var(--b1);margin:0 -1px;position:relative;z-index:2;transition:background .15s}
@@ -836,10 +836,11 @@ let _history=[],_histIdx=-1,_histSuspend=false;
 function histSnapshot(){
   if(_histSuspend)return;
   const snap=JSON.stringify(statePayload());
-  _history=_history.slice(0,_histIdx+1);
+  // Only truncate future if this is a genuine new action (not called from render during undo/redo)
   if(_history[_histIdx]===snap)return;
+  _history=_history.slice(0,_histIdx+1);
   _history.push(snap);
-  if(_history.length>80)_history.shift();
+  if(_history.length>80){_history.shift();}
   _histIdx=_history.length-1;
   _updateHistBtns();
 }
@@ -848,16 +849,18 @@ function histUndo(){
   _histIdx--;
   _histSuspend=true;
   applyPayload(JSON.parse(_history[_histIdx]));
+  render();
   _histSuspend=false;
-  render();_updateHistBtns();
+  _updateHistBtns();
 }
 function histRedo(){
   if(_histIdx>=_history.length-1)return;
   _histIdx++;
   _histSuspend=true;
   applyPayload(JSON.parse(_history[_histIdx]));
+  render();
   _histSuspend=false;
-  render();_updateHistBtns();
+  _updateHistBtns();
 }
 function _updateHistBtns(){
   const u=document.getElementById('undo-btn'),r=document.getElementById('redo-btn');
@@ -1486,22 +1489,20 @@ function initSectionDivider(divider,secA,secB,secC,body,pid,iA,iB,iC){
     e.preventDefault();
     divider.classList.add('dragging');
     const startX=e.clientX;
-    const totalW=body.offsetWidth;
-    const startWA=secA.offsetWidth;
-    const startWB=secB.offsetWidth;
+    const startWA=secA.getBoundingClientRect().width;
+    const startWB=secB.getBoundingClientRect().width;
+    const totalW=body.getBoundingClientRect().width;
+    const minPx=120;
     function onMove(ev){
       const dx=ev.clientX-startX;
-      const minPx=80;
       let newA=Math.max(minPx,startWA+dx);
       let newB=Math.max(minPx,startWB-dx);
-      // Clamp so neither goes below min
       if(newA<minPx){newA=minPx;newB=startWA+startWB-minPx}
       if(newB<minPx){newB=minPx;newA=startWA+startWB-minPx}
       const pA=(newA/totalW)*100;
       const pB=(newB/totalW)*100;
       secA.style.flex=`0 0 ${pA}%`;
       secB.style.flex=`0 0 ${pB}%`;
-      // Update saved widths
       const saved=_palSectionWidths[pid]||[33.3,33.3,33.4];
       saved[iA]=pA;saved[iB]=pB;
       _palSectionWidths[pid]=saved;
