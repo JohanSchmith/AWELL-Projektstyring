@@ -1694,7 +1694,7 @@ function initSectionDivider(divider,secA,secB,body,pid,iA,iB){
 function setSidebarHeight(paletteH){
   const topbar=document.querySelector('.topbar');
   const topH=topbar?topbar.offsetHeight:48;
-  const h=(window.innerHeight-topH-paletteH)+'px';
+  const h=(window.innerHeight-topH-paletteH-2)+'px';
   document.querySelectorAll('.sidebar').forEach(el=>el.style.height=h);
 }
 
@@ -3267,10 +3267,8 @@ requestAnimationFrame(()=>requestAnimationFrame(()=>{
   // Use ResizeObserver so sidebar height is always correct
   const pal=document.querySelector('.palette');
   if(pal){
-    const ro=new ResizeObserver(entries=>{
-      for(const e of entries){
-        setSidebarHeight(e.contentRect.height);
-      }
+    const ro=new ResizeObserver(()=>{
+      setSidebarHeight(pal.offsetHeight);
     });
     ro.observe(pal);
   }
