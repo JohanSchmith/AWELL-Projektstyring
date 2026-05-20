@@ -283,37 +283,38 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-btn-a:hover{filter:brightness(1.12)}
 
 /* ── PALETTE ── */
-.palette{position:fixed;left:0;right:0;bottom:0;background:var(--s2);border-top:1px solid var(--b1);padding:8px 12px 10px;z-index:80;box-shadow:0 -12px 34px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+.palette{position:fixed;left:0;right:0;bottom:0;background:var(--s2);border-top:1px solid var(--b1);padding:8px 12px 10px;z-index:80;box-shadow:0 -12px 34px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:visible}
 .pal-resize-handle{position:absolute;top:0;left:0;right:0;height:5px;cursor:ns-resize;background:transparent;z-index:81}
 .pal-resize-handle:hover,.pal-resize-handle.dragging{background:var(--acc);opacity:.5}
 .pal-lbl{font-size:8px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;flex-shrink:0}
 .pal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .pal-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
-.pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pal-action{height:22px;padding:0 8px;border-radius:5px;border:1px solid var(--b2);background:var(--s3);color:var(--t2);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
 .pal-action:hover{border-color:var(--acc);color:var(--acc)}
-.pal-body{display:flex;flex-direction:row;gap:0;align-items:stretch;flex:1;overflow:hidden;min-height:0}
+.pal-body{display:flex;flex-direction:row;align-items:stretch;flex:1;min-height:0;overflow:hidden}
+.pal-section{min-width:120px;flex:1;padding:0 12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.pal-section:first-child{padding-left:0}
+.pal-section:last-child{padding-right:0}
+.pal-divider{width:5px;flex-shrink:0;cursor:col-resize;background:transparent;border-left:1px solid var(--b1);border-right:1px solid var(--b1);margin:0;position:relative;z-index:2;transition:background .15s;align-self:stretch}
+.pal-divider:hover,.pal-divider.dragging{background:var(--acc);opacity:.5}
+.pal-section-head{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-shrink:0;flex-wrap:nowrap;overflow:hidden}
+.pal-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-chips{flex:1;min-height:0;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow-y:auto;overflow-x:hidden}
 .pal-chips::-webkit-scrollbar{width:4px}
 .pal-chips::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .pal-chips::-webkit-scrollbar-thumb:hover{background:var(--b3)}
-.pal-section{min-width:120px;overflow:hidden;padding:0 12px;display:flex;flex-direction:column;min-height:0;max-width:100%}
-.pal-section:first-child{padding-left:0}
-.pal-section:last-child{padding-right:0}
-.pal-divider{width:5px;flex-shrink:0;cursor:col-resize;background:transparent;border-left:1px solid var(--b1);border-right:1px solid var(--b1);margin:0 -1px;position:relative;z-index:2;transition:background .15s}
-.pal-divider:hover,.pal-divider.dragging{background:var(--acc);opacity:.5}
-.pal-section-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;flex-wrap:wrap;flex-shrink:0}
-.pal-chips{flex:1;display:flex;flex-wrap:wrap;gap:4px;min-height:25px;align-content:flex-start;overflow-y:auto;overflow-x:hidden;width:100%}
-.pal-chip{height:22px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:grab;user-select:none;border:1px solid transparent;display:flex;align-items:center;transition:filter .15s,transform .1s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-chip{height:22px;padding:0 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:grab;user-select:none;border:1px solid transparent;display:inline-flex;align-items:center;transition:filter .15s,transform .1s;white-space:nowrap;flex-shrink:0}
 .pal-chip:hover{filter:brightness(1.2);transform:translateY(-1px)}
 .pal-chip:active{cursor:grabbing}
 .pal-chip.has-conflict{box-shadow:0 0 0 2px var(--warn)}
-.pal-team{min-height:25px;padding:3px 6px;border:1px dashed var(--b2);border-radius:7px;background:rgba(255,255,255,.025);display:flex;align-items:center;gap:5px;flex-wrap:wrap;cursor:grab;width:100%;box-sizing:border-box;min-width:0}
+.pal-team{padding:3px 6px;border:1px dashed var(--b2);border-radius:7px;background:rgba(255,255,255,.025);display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;cursor:grab;width:100%;box-sizing:border-box;min-width:0}
 .pal-team:hover{border-color:var(--acc)}
 .pal-team.drag-over{background:rgba(91,143,255,.12);border-color:var(--acc)}
-.pal-team-name{min-width:40px;width:72px;max-width:100%;height:20px;border:none;border-bottom:1px solid var(--b2);background:transparent;color:var(--t1);font-size:10px;font-family:'DM Mono',monospace;font-weight:700;outline:none;flex-shrink:1}
+.pal-team-name{width:60px;min-width:30px;flex-shrink:1;height:20px;border:none;border-bottom:1px solid var(--b2);background:transparent;color:var(--t1);font-size:10px;font-family:'DM Mono',monospace;font-weight:700;outline:none}
 .pal-team-name:focus{border-bottom-color:var(--acc)}
-.pal-team-del{height:18px;width:18px;border-radius:4px;border:none;background:rgba(210,55,55,.14);color:#ff7070;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+.pal-team-del{height:18px;width:18px;flex-shrink:0;border-radius:4px;border:none;background:rgba(210,55,55,.14);color:#ff7070;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
 .pal-team-del:hover{background:rgba(210,55,55,.28)}
-.pal-team-member{height:18px;padding:0 5px;border-radius:4px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:3px}
+.pal-team-member{height:18px;padding:0 5px;border-radius:4px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:3px;white-space:nowrap}
 .pal-team-member .cx{font-size:8px;opacity:.55;cursor:pointer}
 .pal-team-member .cx:hover{opacity:1}
 #vplan,#vflip{padding-bottom:86px}
@@ -1456,13 +1457,13 @@ function renderPalette(){
     const div1=document.getElementById(pid+'-div1');
     const div2=document.getElementById(pid+'-div2');
     if(body&&secEmp&&secMat&&secTeam&&div1&&div2){
-      // Apply saved or default widths
-      const saved=_palSectionWidths[pid]||[33.3,33.3,33.4];
-      secEmp.style.flex=`0 0 ${saved[0]}%`;
-      secMat.style.flex=`0 0 ${saved[1]}%`;
-      secTeam.style.flex=`0 0 ${saved[2]}%`;
-      initSectionDivider(div1,secEmp,secMat,secTeam,body,pid,0,1,2);
-      initSectionDivider(div2,secMat,secTeam,null,body,pid,1,2,null);
+      // Apply saved flex-grow ratios (default equal)
+      const saved=_palSectionWidths[pid]||[1,1,1];
+      secEmp.style.flex=`${saved[0]} ${saved[0]} 0`;
+      secMat.style.flex=`${saved[1]} ${saved[1]} 0`;
+      secTeam.style.flex=`${saved[2]} ${saved[2]} 0`;
+      initSectionDivider(div1,secEmp,secMat,body,pid,0,1);
+      initSectionDivider(div2,secMat,secTeam,body,pid,1,2);
     }
     // Drop anywhere on palette = remove from task
     wrap.addEventListener('dragover',ev=>{if(dragSrcTid&&dragEid)ev.preventDefault()});
@@ -1484,14 +1485,13 @@ function renderPalette(){
 // Store section widths per palette id
 const _palSectionWidths={};
 
-function initSectionDivider(divider,secA,secB,secC,body,pid,iA,iB,iC){
+function initSectionDivider(divider,secA,secB,body,pid,iA,iB){
   divider.addEventListener('mousedown',e=>{
     e.preventDefault();
     divider.classList.add('dragging');
     const startX=e.clientX;
     const startWA=secA.getBoundingClientRect().width;
     const startWB=secB.getBoundingClientRect().width;
-    const totalW=body.getBoundingClientRect().width;
     const minPx=120;
     function onMove(ev){
       const dx=ev.clientX-startX;
@@ -1499,12 +1499,11 @@ function initSectionDivider(divider,secA,secB,secC,body,pid,iA,iB,iC){
       let newB=Math.max(minPx,startWB-dx);
       if(newA<minPx){newA=minPx;newB=startWA+startWB-minPx}
       if(newB<minPx){newB=minPx;newA=startWA+startWB-minPx}
-      const pA=(newA/totalW)*100;
-      const pB=(newB/totalW)*100;
-      secA.style.flex=`0 0 ${pA}%`;
-      secB.style.flex=`0 0 ${pB}%`;
-      const saved=_palSectionWidths[pid]||[33.3,33.3,33.4];
-      saved[iA]=pA;saved[iB]=pB;
+      // Store as pixel-based flex values (flex-grow proportional to width)
+      secA.style.flex=`${newA} ${newA} 0`;
+      secB.style.flex=`${newB} ${newB} 0`;
+      const saved=_palSectionWidths[pid]||[1,1,1];
+      saved[iA]=newA;saved[iB]=newB;
       _palSectionWidths[pid]=saved;
     }
     function onUp(){
