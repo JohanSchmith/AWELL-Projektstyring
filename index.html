@@ -3263,9 +3263,17 @@ document.addEventListener('keydown',e=>{
 });
 // defer so gantt-wrap has a real clientWidth
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  const pal=document.querySelector('.palette');
-  setSidebarHeight(pal?pal.offsetHeight:86);
   render();histSnapshot();initCloud();
+  // Use ResizeObserver so sidebar height is always correct
+  const pal=document.querySelector('.palette');
+  if(pal){
+    const ro=new ResizeObserver(entries=>{
+      for(const e of entries){
+        setSidebarHeight(e.contentRect.height);
+      }
+    });
+    ro.observe(pal);
+  }
 }));
 window.addEventListener('resize',()=>{
   const pal=document.querySelector('.palette');
