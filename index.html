@@ -830,6 +830,13 @@ function seed(){
 // ── HELPERS ──────────────────────────────────────────────
 function getDW(){return DWL[dwi]}
 function vdays(){const cfg=getZoomConfig();const r=[];let d=new Date(vs);for(let i=0;i<cfg.days;i++){r.push(new Date(d));d=add(d,1)}return r}
+function timelineDays(cfg){
+  const buffer=cfg.panBuffer||0;
+  const r=[];
+  let d=add(vs,-buffer);
+  for(let i=0;i<cfg.days+buffer*2;i++){r.push(new Date(d));d=add(d,1)}
+  return r;
+}
 function projBy(id){return projs.find(p=>p.id===id)}
 function taskBy(id){return tasks.find(t=>t.id===id)}
 function empBy(id){return emps.find(e=>e.id===id)}
@@ -899,11 +906,11 @@ function getZoomConfig(){
   const el=document.getElementById(wrapId);
   const W=(el&&el.clientWidth>0)?el.clientWidth:window.innerWidth-240||900;
   switch(zoomMode){
-    case 'day':      return{days:1,  dw:W};
-    case 'week':     return{days:7,  dw:Math.max(40,Math.floor((W-2)/7))};
-    case 'two-week': return{days:14, dw:Math.max(28,Math.floor((W-2)/14))};
-    case 'month':    return{days:35, dw:Math.max(20,Math.floor((W-2)/35))};
-    default:         return{days:7,  dw:Math.max(40,Math.floor((W-2)/7))};
+    case 'day':      return{days:1,  dw:W,                                      panBuffer:7};
+    case 'week':     return{days:7,  dw:Math.max(40,Math.floor((W-2)/7)),       panBuffer:7};
+    case 'two-week': return{days:14, dw:Math.max(28,Math.floor((W-2)/14)),      panBuffer:14};
+    case 'month':    return{days:35, dw:Math.max(20,Math.floor((W-2)/35)),      panBuffer:35};
+    default:         return{days:7,  dw:Math.max(40,Math.floor((W-2)/7)),       panBuffer:7};
   }
 }
 function setZoom(mode){
@@ -1006,11 +1013,12 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
       wrap.classList.add('dragging');
       const maxScroll=wrap.scrollWidth-wrap.clientWidth;
       const horizontalPan=Math.abs(dx)>Math.max(8,Math.abs(dy)*1.25);
-      if(horizontalPan&&maxScroll<4&&visualPanEl){
+      if(horizontalPan&&maxScroll>=4){
+        wrap.scrollLeft=dragStartScroll-dx;
+      }else if(horizontalPan&&maxScroll<4&&visualPanEl){
         isVisualPanning=true;
         visualPanEl.style.transform=`translateX(${dx}px)`;
       }else{
-        wrap.scrollLeft=dragStartScroll-dx;
         wrap.scrollTop=dragStartTop-dy;
       }
       updateThumb();
@@ -1027,12 +1035,19 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
       wrap.addEventListener('click',absorb,{capture:true,once:true});
       const maxScroll=wrap.scrollWidth-wrap.clientWidth;
       const horizontalPan=Math.abs(panDx)>Math.max(35,Math.abs(panDy)*1.25);
-      if(horizontalPan&&maxScroll<4){
+      if(horizontalPan){
         const cfg=getZoomConfig();
-        const step=Math.max(1,Math.round(Math.abs(panDx)/Math.max(24,cfg.dw)));
-        vs=add(vs,panDx<0?step:-step);
-        if(visualPanEl)visualPanEl.style.transform='';
-        render();
+        const baseScroll=(cfg.panBuffer||0)*cfg.dw;
+        const movedDays=maxScroll>=4
+          ?Math.round((wrap.scrollLeft-baseScroll)/Math.max(1,cfg.dw))
+          :((panDx<0?1:-1)*Math.max(1,Math.round(Math.abs(panDx)/Math.max(24,cfg.dw))));
+        if(movedDays!==0){
+          vs=add(vs,movedDays);
+          if(visualPanEl)visualPanEl.style.transform='';
+          render();
+        }else{
+          wrap.scrollLeft=baseScroll;
+        }
       }
     }
     if(visualPanEl){
@@ -1055,8 +1070,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
 function render(){
   computeConflicts();
   const cfg=getZoomConfig();
-  const days=vdays();
-  const f=days[0],l=days[days.length-1];
+  const visibleDays=vdays();
+  const days=timelineDays(cfg);
+  const f=visibleDays[0],l=visibleDays[visibleDays.length-1];
   let lbl='';
   if(zoomMode==='day')lbl=`${DKD[f.getDay()]} ${f.getDate()}. ${DKMs[f.getMonth()]} ${f.getFullYear()}`;
   else lbl=`${f.getDate()} ${DKMs[f.getMonth()]} – ${l.getDate()} ${DKMs[l.getMonth()]} ${l.getFullYear()}`;
@@ -1309,6 +1325,7 @@ function renderGantt(days,cfg){
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
   wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
+  if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
 }
 
 // ── FLIP VIEW: medarbejdere × opgaver ─────────────────────
@@ -1572,6 +1589,7 @@ function renderFlipGantt(days,cfg){
   const sb=document.getElementById('flip-sb-rows');
   syncHorizontalScroll('flip-gantt-wrap','flip-x-scroll','flip-x-scroll-inner',totalW);
   wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
+  if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
 }
 
 // ── SCROLL + OPEN ─────────────────────────────────────────
