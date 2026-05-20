@@ -343,6 +343,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pal-team-member .cx{font-size:8px;opacity:.55;cursor:pointer}
 .pal-team-member .cx:hover{opacity:1}
 #vplan,#vflip{padding-bottom:86px}
+.sidebar{padding-bottom:86px}
 @media(max-width:760px){.pal-body{grid-template-columns:1fr}.palette{max-height:42vh;overflow:auto}#vplan,#vflip{padding-bottom:150px}}
 
 /* ── MIN UGE ── */
@@ -1698,6 +1699,7 @@ function initPaletteResize(handle,palette){
     palette.style.height=newH+'px';
     palette.style.overflow='auto';
     document.querySelectorAll('#vplan,#vflip').forEach(el=>el.style.paddingBottom=newH+'px');
+    document.querySelectorAll('.sidebar').forEach(el=>el.style.paddingBottom=newH+'px');
   }
   function onUp(){
     handle.classList.remove('dragging');
