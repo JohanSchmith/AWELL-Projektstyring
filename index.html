@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Disponering — Awell</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8fff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Disponering">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -3069,6 +3075,15 @@ document.addEventListener('keydown',e=>{
 });
 // defer so gantt-wrap has a real clientWidth
 requestAnimationFrame(()=>requestAnimationFrame(()=>{render();histSnapshot();initCloud()}));
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => console.log("SW registered:", reg.scope))
+      .catch(err => console.warn("SW registration failed:", err));
+  });
+}
 </script>
 </body>
 </html>
