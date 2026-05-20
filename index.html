@@ -72,6 +72,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 /* ── LAYOUT ── */
 .main{display:flex;flex:1;overflow:hidden}
 .sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;z-index:10;overflow:hidden}
+.sb-main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.sb-rows{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
 .sb-head{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--b1);flex-shrink:0}
 .sb-lbl{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
 .sb-rows{flex:1;overflow-y:auto;overflow-x:hidden}
@@ -139,7 +141,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .x-scroll-thumb:hover{background:var(--acc)}
 .x-scroll-thumb.dragging{cursor:grabbing;background:var(--acc)}
 .x-scroll-inner{display:none}
-.sb-rows{flex:1;overflow-y:scroll;overflow-x:hidden}
+.sb-rows{flex:1;overflow-y:scroll;overflow-x:hidden;min-height:0}
 .sb-rows::-webkit-scrollbar{width:8px}
 .sb-rows::-webkit-scrollbar-track{background:var(--s1)}
 .sb-rows::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
@@ -594,12 +596,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
         <button class="pal-action" onclick="openProjM()" style="flex:1;justify-content:center;padding:0">+ Projekt</button>
       </div>
     </div>
+    <div class="sb-main">
     <div class="sb-rows" id="sb-rows"></div>
     <div class="sb-archive-toggle" id="sb-archive-toggle" onclick="toggleArchiveView()">
       <span>&#x1F4E6;</span><span>Arkiv</span><span class="arc-count" id="arc-count">0</span>
       <span style="margin-left:auto;font-size:10px" id="arc-arrow">&#x25BC;</span>
     </div>
     <div id="sb-archive-section" style="display:none;overflow-y:auto;max-height:180px"></div>
+    </div>
     <div class="palette" id="palette-wrap-plan">
       <div class="pal-lbl">Træk medarbejdere, materiel eller hold ind på opgave -></div>
       <div class="pal-chips" id="palette-plan"></div>
