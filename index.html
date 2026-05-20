@@ -983,7 +983,7 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
 
   // Drag-to-scroll on the gantt canvas itself
   let dragStartX=0,dragStartY=0,dragStartScroll=0,dragStartTop=0,isDragging=false,didDrag=false;
-  let panDx=0,panDy=0;
+  let panDx=0,panDy=0,visualPanEl=null,isVisualPanning=false;
   const blockPanSelector='.rz,.flip-rz,.bar-chip,.pal-chip,.drag-handle,.flip-bar-cmtbadge,input,textarea,select,button,a,[contenteditable="true"]';
   const onPanStart=e=>{
     if(e.button!==0)return;
@@ -992,6 +992,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
     panDx=0;panDy=0;
     dragStartX=e.clientX;dragStartY=e.clientY;
     dragStartScroll=wrap.scrollLeft;dragStartTop=wrap.scrollTop;
+    visualPanEl=wrap.querySelector('.gantt');
+    isVisualPanning=false;
+    if(visualPanEl)visualPanEl.style.transition='none';
   };
   const onPanMove=e=>{
     if(!isDragging)return;
@@ -1001,8 +1004,15 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
     if(Math.hypot(dx,dy)>3){
       didDrag=true;
       wrap.classList.add('dragging');
-      wrap.scrollLeft=dragStartScroll-dx;
-      wrap.scrollTop=dragStartTop-dy;
+      const maxScroll=wrap.scrollWidth-wrap.clientWidth;
+      const horizontalPan=Math.abs(dx)>Math.max(8,Math.abs(dy)*1.25);
+      if(horizontalPan&&maxScroll<4&&visualPanEl){
+        isVisualPanning=true;
+        visualPanEl.style.transform=`translateX(${dx}px)`;
+      }else{
+        wrap.scrollLeft=dragStartScroll-dx;
+        wrap.scrollTop=dragStartTop-dy;
+      }
       updateThumb();
       e.preventDefault();
     }
@@ -1021,9 +1031,16 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
         const cfg=getZoomConfig();
         const step=Math.max(1,Math.round(Math.abs(panDx)/Math.max(24,cfg.dw)));
         vs=add(vs,panDx<0?step:-step);
-        requestAnimationFrame(render);
+        if(visualPanEl)visualPanEl.style.transform='';
+        render();
       }
     }
+    if(visualPanEl){
+      visualPanEl.style.transition='';
+      visualPanEl.style.transform='';
+    }
+    visualPanEl=null;
+    isVisualPanning=false;
     didDrag=false;
   };
   listen(wrap,'mousedown',onPanStart);
