@@ -156,6 +156,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .g-cell{flex-shrink:0;height:100%;border-right:1px solid var(--b1);position:relative}
 .g-cell.wk{background:rgba(0,0,0,.2)}
 .g-cell.td{background:rgba(255,210,0,.07)}
+.g-cell.holiday{background:rgba(255,100,100,.12)}
+.d-hd.holiday{background:rgba(255,100,100,.15)}
+.d-hd.holiday .d-n{color:#ff7b7b}
+.d-hd.special{background:rgba(255,200,50,.13)}
+.d-hd.special .d-n{color:#ffcc33}
+.g-cell.special{background:rgba(255,200,50,.07)}
+.holiday-tag{position:absolute;top:0;left:0;right:0;font-size:7px;font-family:'DM Mono',monospace;color:#ff9090;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;line-height:10px;pointer-events:none}
+.special-tag{position:absolute;top:0;left:0;right:0;font-size:7px;font-family:'DM Mono',monospace;color:#ffcc33;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;line-height:10px;pointer-events:none}
 .today-line{display:none}
 .hold-stripe{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,159,67,.06) 4px,rgba(255,159,67,.06) 8px);pointer-events:none;z-index:1;border-left:2px solid var(--warn);border-right:2px solid var(--warn)}
 
@@ -505,6 +513,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     </div>
   </div>
   <div class="tb-r">
+    <button class="btn btn-g" id="undo-btn" onclick="histUndo()" title="Fortryd (Ctrl+Z)" style="padding:0 8px;font-size:14px" disabled>↩</button>
+    <button class="btn btn-g" id="redo-btn" onclick="histRedo()" title="Fortryd fortryd (Ctrl+Y)" style="padding:0 8px;font-size:14px" disabled>↪</button>
     <div class="cloud-status local" id="cloud-status" title="Supabase synkronisering" onclick="if(!cloudUser)openAuthM()">
       <span class="cloud-dot"></span><span id="cloud-status-text">Lokal</span>
     </div>
@@ -520,6 +530,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <button class="btn btn-g" onclick="toggleMoreMenu(event)">Mere ▾</button>
       <div class="more-menu" id="more-menu">
         <button class="more-item" onclick="openVacM();closeMoreMenu()">🏖 Ferie & fri</button>
+        <button class="more-item" onclick="openSpecialDayM();closeMoreMenu()">📅 Særlig dag</button>
         <button class="more-item" id="theme-btn" onclick="toggleTheme();closeMoreMenu()">🌙 Skift tema</button>
         <div class="more-sep"></div>
         <button class="more-item" onclick="backupData();closeMoreMenu()">💾 Backup</button>
@@ -527,7 +538,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
         <button class="more-item" onclick="document.getElementById('import-file').click();closeMoreMenu()">⬆ Importér</button>
         <div class="more-sep"></div>
         <button class="more-item" onclick="openEmpM();closeMoreMenu()">+ Medarbejder/materiel</button>
-        <button class="more-item" onclick="resetAllData();closeMoreMenu()">↺ Nulstil data</button>
         <button class="more-item" id="logout-btn" onclick="signOut();closeMoreMenu()" style="display:none">Log ud</button>
       </div>
     </div>
@@ -575,7 +585,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <div class="flip-sidebar">
       <div class="flip-sb-head">
         <span class="sb-lbl">Medarbejdere og materiel</span>
-        <button class="btn btn-g" style="font-size:10px;height:22px;padding:0 8px" onclick="openEmpM()">+ Ressource</button>
+        <button class="pal-action" onclick="openEmpM()">+ Ressource</button>
       </div>
       <div class="flip-sb-rows" id="flip-sb-rows"></div>
       <div class="palette" id="palette-wrap-flip">
@@ -722,6 +732,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   </div>
 </div>
 
+<!-- SPECIAL DAY MODAL -->
+<div class="mbg" id="mbg-sd">
+  <div class="modal" style="width:340px">
+    <h3>Særlig dag</h3>
+    <div class="fg"><label>Dato</label><input type="date" id="sd-date"></div>
+    <div class="fg"><label>Navn (blank = fjern)</label><input id="sd-name" placeholder="Medarbejderdag, firmaferie…"></div>
+    <div class="m-acts">
+      <button class="btn btn-g" onclick="closeSpecialDayM()">Annuller</button>
+      <button class="btn btn-p" onclick="saveSpecialDay()">Gem</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -801,6 +824,45 @@ let conflicts={};
 let dragEid=null,dragSrcTid=null,dragEids=null;
 let rzTask=null,rzSide=null,rzStartX=0,rzStartDate=null,rzEndDate=null;
 let sbClient=null,cloudEnabled=false,cloudReady=false,cloudApplying=false,cloudSaveTimer=null,cloudChannel=null,cloudUser=null,cloudRemoteUpdatedAt=null;
+
+// ── HISTORY (undo/redo) ───────────────────────────────────
+let _history=[],_histIdx=-1,_histSuspend=false;
+function histSnapshot(){
+  if(_histSuspend)return;
+  const snap=JSON.stringify(statePayload());
+  _history=_history.slice(0,_histIdx+1);
+  if(_history[_histIdx]===snap)return;
+  _history.push(snap);
+  if(_history.length>80)_history.shift();
+  _histIdx=_history.length-1;
+  _updateHistBtns();
+}
+function histUndo(){
+  if(_histIdx<=0)return;
+  _histIdx--;
+  _histSuspend=true;
+  applyPayload(JSON.parse(_history[_histIdx]));
+  _histSuspend=false;
+  render();_updateHistBtns();
+}
+function histRedo(){
+  if(_histIdx>=_history.length-1)return;
+  _histIdx++;
+  _histSuspend=true;
+  applyPayload(JSON.parse(_history[_histIdx]));
+  _histSuspend=false;
+  render();_updateHistBtns();
+}
+function _updateHistBtns(){
+  const u=document.getElementById('undo-btn'),r=document.getElementById('redo-btn');
+  if(u)u.disabled=_histIdx<=0;
+  if(r)r.disabled=_histIdx>=_history.length-1;
+}
+
+// ── SPECIAL DAYS ──────────────────────────────────────────
+// specialDays: {[yyyy-mm-dd]: {type:'holiday'|'custom', name:string}}
+let specialDays={};
+let vacSeq=1;
 
 // popup state
 let popTarget=null; // {type:'task'|'proj', id}
@@ -1287,6 +1349,29 @@ function renderPalette(){
     const matBox=document.getElementById(pid+'-materials');
     const teamBox=document.getElementById(pid+'-teams');
     if(!empBox||!matBox||!teamBox)return;
+
+    // Drop on palette section = remove from source task
+    function addPalDropTarget(el){
+      el.addEventListener('dragover',ev=>{
+        if(dragSrcTid&&dragEid){ev.preventDefault();el.style.outline='2px dashed var(--acc)'}
+      });
+      el.addEventListener('dragleave',()=>el.style.outline='');
+      el.addEventListener('drop',ev=>{
+        ev.preventDefault();el.style.outline='';
+        if(dragSrcTid&&dragEid){
+          const t=taskBy(dragSrcTid);
+          if(t){t.staff=t.staff.filter(s=>s!==dragEid);showToast(`${dragEid} fjernet fra opgave`)}
+          dragEid=null;dragSrcTid=null;
+          saveState();computeConflicts();const cfg2=getZoomConfig();const d2=vdays();
+          if(view==='flip'){renderFlipGantt(d2,cfg2);renderFlipSidebar(d2,cfg2)}
+          else{renderGantt(d2,cfg2);renderSidebar(d2,cfg2)}
+          renderPalette();
+        }
+      });
+    }
+    addPalDropTarget(empBox);
+    addPalDropTarget(matBox);
+
     emps.forEach(e=>{
       const chip=document.createElement('div');
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
@@ -1352,6 +1437,20 @@ function renderPalette(){
     // Attach resize handle
     const rh=document.getElementById(pid+'-resize-handle');
     if(rh)initPaletteResize(rh,wrap);
+    // Drop anywhere on palette = remove from task
+    wrap.addEventListener('dragover',ev=>{if(dragSrcTid&&dragEid)ev.preventDefault()});
+    wrap.addEventListener('drop',ev=>{
+      if(dragSrcTid&&dragEid){
+        ev.preventDefault();
+        const t=taskBy(dragSrcTid);
+        if(t){t.staff=t.staff.filter(s=>s!==dragEid);showToast(`${dragEid} fjernet fra opgave`)}
+        dragEid=null;dragSrcTid=null;
+        saveState();computeConflicts();const cfg2=getZoomConfig();const d2=vdays();
+        if(view==='flip'){renderFlipGantt(d2,cfg2);renderFlipSidebar(d2,cfg2)}
+        else{renderGantt(d2,cfg2);renderSidebar(d2,cfg2)}
+        renderPalette();
+      }
+    });
   });
 }
 
@@ -1473,11 +1572,18 @@ function renderGantt(days,cfg){
   const drow=document.createElement('div');drow.className='g-days-row';
   days.forEach(d=>{
     const cell=document.createElement('div');
-    cell.className='d-hd'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'');
+    const ds=ky(d);
+    const hol=isHoliday(ds);
+    const holClass=hol?(hol.type==='holiday'?' holiday':' special'):'';
+    cell.className='d-hd'+(isWk(d)?' wk':'')+(ds===today?' td':'')+holClass;
     cell.style.width=dw+'px';
+    cell.title=hol?hol.name:'';
     cell.innerHTML=`
       <div class="d-dk">${dw>28?DKD[d.getDay()].slice(0,2):''}</div>
-      <div class="d-n">${dw>22?d.getDate():''}</div>`;
+      <div class="d-n">${dw>22?d.getDate():''}</div>
+      ${hol&&dw>30?`<div class="${hol.type==='holiday'?'holiday-tag':'special-tag'}">${hol.name}</div>`:''}`;
+    // Right-click to set special day
+    cell.addEventListener('contextmenu',e=>{e.preventDefault();openSpecialDayM(ds)});
     drow.appendChild(cell);
   });
   head.appendChild(drow);gantt.appendChild(head);
@@ -1493,7 +1599,7 @@ function renderGantt(days,cfg){
     prow.style.width=totalW+'px';
     days.forEach(d=>{
       const cell=document.createElement('div');
-      cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'');
+      const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');if(_hol)cell.title=_hol.name;
       cell.style.width=dw+'px';prow.appendChild(cell);
     });
     const ps=projStart(proj.id),pe=projEnd(proj.id);
@@ -1542,7 +1648,7 @@ function renderGantt(days,cfg){
         trow.style.width=totalW+'px';
         days.forEach(d=>{
           const cell=document.createElement('div');
-          cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'');
+          const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');if(_hol)cell.title=_hol.name;
           cell.style.width=dw+'px';trow.appendChild(cell);
         });
         const dz=document.createElement('div');dz.className='drop-zone';
@@ -1597,6 +1703,16 @@ function renderGantt(days,cfg){
           bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+          bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
+          bar.addEventListener('dragleave',()=>bar.style.outline='');
+          bar.addEventListener('drop',e=>{
+            e.preventDefault();bar.style.outline='';
+            if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();return}
+            if(!dragEid)return;
+            if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
+            if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+            dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();
+          });
           trow.appendChild(bar);
         }
         // Vacation overlays for staff on this task
@@ -1618,7 +1734,10 @@ function renderGantt(days,cfg){
   const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
-  wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
+  // Bidirectional scroll sync
+  let _syncLock=false;
+  wrap.onscroll=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false};
+  sb.onscroll=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false};
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
 }
 
@@ -1756,11 +1875,17 @@ function renderFlipGantt(days,cfg){
   const drow=document.createElement('div');drow.className='g-days-row';
   days.forEach(d=>{
     const cell=document.createElement('div');const wk=wn(d);
-    cell.className='d-hd'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'');
+    const ds=ky(d);
+    const hol=isHoliday(ds);
+    const holClass=hol?(hol.type==='holiday'?' holiday':' special'):'';
+    cell.className='d-hd'+(isWk(d)?' wk':'')+(ds===today?' td':'')+holClass;
     cell.style.width=dw+'px';
+    cell.title=hol?hol.name:'';
     cell.innerHTML=`
       <div class="d-dk">${dw>28?DKD[d.getDay()].slice(0,2):''}</div>
-      <div class="d-n">${dw>22?d.getDate():''}</div>`;
+      <div class="d-n">${dw>22?d.getDate():''}</div>
+      ${hol&&dw>30?`<div class="${hol.type==='holiday'?'holiday-tag':'special-tag'}">${hol.name}</div>`:''}`;
+    cell.addEventListener('contextmenu',e=>{e.preventDefault();openSpecialDayM(ds)});
     drow.appendChild(cell);
   });
   head.appendChild(drow);gantt.appendChild(head);
@@ -1774,7 +1899,7 @@ function renderFlipGantt(days,cfg){
     // Background cells
     days.forEach(d=>{
       const cell=document.createElement('div');
-      cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'');
+      const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');if(_hol)cell.title=_hol.name;
       cell.style.width=dw+'px';
       row.appendChild(cell);
     });
@@ -1893,7 +2018,9 @@ function renderFlipGantt(days,cfg){
   const wrap=document.getElementById('flip-gantt-wrap');
   const sb=document.getElementById('flip-sb-rows');
   syncHorizontalScroll('flip-gantt-wrap','flip-x-scroll','flip-x-scroll-inner',totalW);
-  wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
+  let _flipLock=false;
+  wrap.onscroll=()=>{if(_flipLock)return;_flipLock=true;sb.scrollTop=wrap.scrollTop;_flipLock=false};
+  sb.onscroll=()=>{if(_flipLock)return;_flipLock=true;wrap.scrollTop=sb.scrollTop;_flipLock=false};
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
 }
 
@@ -2342,7 +2469,6 @@ function renderMyWeek(){
 function setMWP(id){mwPerson=id;renderMyWeek()}
 
 // ── VACATION HELPERS ─────────────────────────────────────
-let vacSeq=1;
 function vacationsFor(empId){return vacations.filter(v=>v.empId===empId)}
 function isVacDay(empId,dateStr){
   return vacations.find(v=>v.empId===empId&&dateStr>=v.from&&dateStr<=v.to)||null;
@@ -2590,6 +2716,7 @@ const STORE_KEY='awell_disp_v1';
 const CLOUD_STATE_ID='default';
 
 function saveState(){
+  histSnapshot();
   saveLocalState();
   scheduleCloudSave();
 }
@@ -2611,7 +2738,7 @@ function loadState(){
 
 function statePayload(){
   return {
-    emps,projs,tasks,comments,vacations,teams,
+    emps,projs,tasks,comments,vacations,teams,specialDays,
     collapsed:[...collapsed],
     pseq,tseq,cseq,vacSeq,teamSeq
   };
@@ -2625,7 +2752,79 @@ function applyPayload(d){
   if(d.comments){comments=d.comments;cseq=d.cseq||cseq}
   if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
   if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
+  if(d.specialDays){specialDays=d.specialDays}
   if(d.collapsed){collapsed=new Set(d.collapsed)}
+}
+
+// ── DANISH HOLIDAYS ───────────────────────────────────────
+function getDanishHolidays(year){
+  // Easter calculation (Anonymous Gregorian algorithm)
+  const a=year%19,b=Math.floor(year/100),c=year%100;
+  const d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  const easter=new Date(year,month-1,day);
+  const easterStr=ky(easter);
+
+  function addDays(dateStr,n){
+    const d=pd(dateStr);d.setDate(d.getDate()+n);return ky(d);
+  }
+
+  const h2=addDays(easterStr,-3); // Skærtorsdag
+  const h3=addDays(easterStr,-2); // Langfredag
+  const h4=addDays(easterStr,1);  // 2. påskedag
+  const h5=addDays(easterStr,39); // Kr. Himmelfartsdag
+  const h6=addDays(easterStr,49); // 1. pinsedag
+  const h7=addDays(easterStr,50); // 2. pinsedag
+
+  return {
+    [`${year}-01-01`]:'Nytårsdag',
+    [h2]:'Skærtorsdag',
+    [h3]:'Langfredag',
+    [easterStr]:'1. påskedag',
+    [h4]:'2. påskedag',
+    [h5]:'Kr. Himmelfartsdag',
+    [h6]:'1. pinsedag',
+    [h7]:'2. pinsedag',
+    [`${year}-12-24`]:'Juleaften',
+    [`${year}-12-25`]:'1. juledag',
+    [`${year}-12-26`]:'2. juledag',
+    [`${year}-12-31`]:'Nytårsaften',
+  };
+}
+
+function isHoliday(dateStr){
+  if(specialDays[dateStr])return specialDays[dateStr];
+  const year=parseInt(dateStr.slice(0,4));
+  const hols=getDanishHolidays(year);
+  if(hols[dateStr])return{type:'holiday',name:hols[dateStr]};
+  return null;
+}
+
+// ── SPECIAL DAYS MODAL ────────────────────────────────────
+function openSpecialDayM(dateStr){
+  document.getElementById('sd-date').value=dateStr||ky(new Date());
+  document.getElementById('sd-name').value='';
+  document.getElementById('mbg-sd').classList.add('on');
+  setTimeout(()=>document.getElementById('sd-name').focus(),50);
+}
+function closeSpecialDayM(){document.getElementById('mbg-sd').classList.remove('on')}
+function saveSpecialDay(){
+  const dateStr=document.getElementById('sd-date').value;
+  const name=document.getElementById('sd-name').value.trim();
+  if(!dateStr)return;
+  if(!name){
+    delete specialDays[dateStr];
+  } else {
+    specialDays[dateStr]={type:'custom',name};
+  }
+  closeSpecialDayM();histSnapshot();render();showToast(name?'Særlig dag tilføjet':'Særlig dag fjernet');
+}
+function removeSpecialDay(dateStr){
+  delete specialDays[dateStr];
+  histSnapshot();render();showToast('Særlig dag fjernet');
 }
 
 function setCloudStatus(text,mode='local'){
@@ -2772,8 +2971,13 @@ vs=mon(new Date());
 applyTheme();
 const hadSaved=loadState();
 if(!hadSaved)seed();
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key==='z'){e.preventDefault();histUndo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();histRedo();}
+});
 // defer so gantt-wrap has a real clientWidth
-requestAnimationFrame(()=>requestAnimationFrame(()=>{render();initCloud()}));
+requestAnimationFrame(()=>requestAnimationFrame(()=>{render();histSnapshot();initCloud()}));
 </script>
 </body>
 </html>
