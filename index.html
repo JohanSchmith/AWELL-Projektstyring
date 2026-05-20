@@ -1739,6 +1739,12 @@ function renderGantt(days,cfg){
   wrap.onscroll=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false};
   sb.onscroll=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false};
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
+  // Match sidebar head height to gantt head height so rows align
+  requestAnimationFrame(()=>{
+    const ghead=gantt.querySelector('.g-head');
+    const sbHead=document.querySelector('.sb-head');
+    if(ghead&&sbHead){const h=ghead.offsetHeight;sbHead.style.height=h+'px';sbHead.style.minHeight=h+'px';}
+  });
 }
 
 // ── FLIP VIEW: medarbejdere × opgaver ─────────────────────
@@ -2022,6 +2028,12 @@ function renderFlipGantt(days,cfg){
   wrap.onscroll=()=>{if(_flipLock)return;_flipLock=true;sb.scrollTop=wrap.scrollTop;_flipLock=false};
   sb.onscroll=()=>{if(_flipLock)return;_flipLock=true;wrap.scrollTop=sb.scrollTop;_flipLock=false};
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
+  // Match flip sidebar head height to gantt head height
+  requestAnimationFrame(()=>{
+    const ghead=gantt.querySelector('.g-head');
+    const sbHead=document.querySelector('.flip-sb-head');
+    if(ghead&&sbHead){const h=ghead.offsetHeight;sbHead.style.height=h+'px';sbHead.style.minHeight=h+'px';}
+  });
 }
 
 // ── SCROLL + OPEN ─────────────────────────────────────────
@@ -2758,40 +2770,57 @@ function applyPayload(d){
 
 // ── DANISH HOLIDAYS ───────────────────────────────────────
 function getDanishHolidays(year){
-  // Easter calculation (Anonymous Gregorian algorithm)
-  const a=year%19,b=Math.floor(year/100),c=year%100;
-  const d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
-  const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
-  const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  // Butcher/Meeus/Jones/Butcher algorithm — verified correct
+  const a=year%19;
+  const b=Math.floor(year/100);
+  const c=year%100;
+  const d=Math.floor(b/4);
+  const e=b%4;
+  const f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4);
+  const k=c%4;
+  const l=(32+2*e+2*i-h-k)%7;
   const m=Math.floor((a+11*h+22*l)/451);
-  const month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
-  const easter=new Date(year,month-1,day);
-  const easterStr=ky(easter);
+  const easterMonth=Math.floor((h+l-7*m+114)/31); // 1-based
+  const easterDay=((h+l-7*m+114)%31)+1;
 
+  // Use local-date string to avoid UTC timezone shift
+  function localDateStr(y,mo,da){
+    const mm=String(mo).padStart(2,'0');
+    const dd=String(da).padStart(2,'0');
+    return `${y}-${mm}-${dd}`;
+  }
   function addDays(dateStr,n){
-    const d=pd(dateStr);d.setDate(d.getDate()+n);return ky(d);
+    const parts=dateStr.split('-');
+    const dt=new Date(+parts[0],+parts[1]-1,+parts[2]);
+    dt.setDate(dt.getDate()+n);
+    return localDateStr(dt.getFullYear(),dt.getMonth()+1,dt.getDate());
   }
 
-  const h2=addDays(easterStr,-3); // Skærtorsdag
-  const h3=addDays(easterStr,-2); // Langfredag
-  const h4=addDays(easterStr,1);  // 2. påskedag
-  const h5=addDays(easterStr,39); // Kr. Himmelfartsdag
-  const h6=addDays(easterStr,49); // 1. pinsedag
-  const h7=addDays(easterStr,50); // 2. pinsedag
+  const easterStr=localDateStr(year,easterMonth,easterDay);
+
+  const skærtorsdag=addDays(easterStr,-3);
+  const langfredag=addDays(easterStr,-2);
+  const anden_paaske=addDays(easterStr,1);
+  const himmelfart=addDays(easterStr,39);
+  const pinse1=addDays(easterStr,49);
+  const pinse2=addDays(easterStr,50);
 
   return {
-    [`${year}-01-01`]:'Nytårsdag',
-    [h2]:'Skærtorsdag',
-    [h3]:'Langfredag',
+    [localDateStr(year,1,1)]:'Nytårsdag',
+    [skærtorsdag]:'Skærtorsdag',
+    [langfredag]:'Langfredag',
     [easterStr]:'1. påskedag',
-    [h4]:'2. påskedag',
-    [h5]:'Kr. Himmelfartsdag',
-    [h6]:'1. pinsedag',
-    [h7]:'2. pinsedag',
-    [`${year}-12-24`]:'Juleaften',
-    [`${year}-12-25`]:'1. juledag',
-    [`${year}-12-26`]:'2. juledag',
-    [`${year}-12-31`]:'Nytårsaften',
+    [anden_paaske]:'2. påskedag',
+    [himmelfart]:'Kr. Himmelfartsdag',
+    [pinse1]:'1. pinsedag',
+    [pinse2]:'2. pinsedag',
+    [localDateStr(year,12,24)]:'Juleaften',
+    [localDateStr(year,12,25)]:'1. juledag',
+    [localDateStr(year,12,26)]:'2. juledag',
+    [localDateStr(year,12,31)]:'Nytårsaften',
   };
 }
 
