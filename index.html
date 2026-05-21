@@ -1976,7 +1976,11 @@ function dropEmpOnTask(task,eid,sourceTid){
   if(task.staff.includes(eid))return;
   const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==task.id&&!(isMove&&t.id===sourceTid));
   const conflicts=empTasks.filter(t=>task.startDate<=t.endDate&&t.startDate<=task.endDate);
-  const doAdd=()=>{task.staff.push(eid);showToast(`${eid} tilføjet`);};
+  const doAdd=()=>{
+    task.staff.push(eid);
+    showToast(`${eid} tilføjet`);
+    computeConflicts();render();saveState();
+  };
   if(conflicts.length){
     showConflictWarning(
       conflicts.map(t=>`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)} – ${fmtDate(t.endDate)})`),
@@ -2010,6 +2014,7 @@ function addStaffToTask(task,ids,sourceTid){
     showConflictWarning(conflictMsgs,()=>{
       clean.forEach(id=>{if(!task.staff.includes(id)){task.staff.push(id);}});
       showToast(clean.length>1?`${clean.length} tilføjet`:`${clean[0]} tilføjet`);
+      computeConflicts();render();saveState();
     });
     return false;
   }
