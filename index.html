@@ -1932,12 +1932,40 @@ function teamDS(e,teamId){
   dragEid=null;dragSrcTid=null;
   e.dataTransfer.effectAllowed='copy';
 }
+function dropEmpOnTask(task,eid,sourceTid){
+  if(!eid||!task)return;
+  if(sourceTid&&sourceTid!==task.id){const st=taskBy(sourceTid);if(st)st.staff=st.staff.filter(x=>x!==eid);}
+  if(task.staff.includes(eid))return;
+  // Conflict check
+  const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==task.id&&(!sourceTid||t.id!==sourceTid));
+  const conflicts=empTasks.filter(t=>task.startDate<t.endDate&&t.startDate<task.endDate);
+  if(conflicts.length){
+    if(!confirm(`⚠ Advarsel: Dobbeltbooking!\n\n${eid} — overlap med "${conflicts[0].name}" (${fmtDate(conflicts[0].startDate)} – ${fmtDate(conflicts[0].endDate)})${conflicts.length>1?`\nog ${conflicts.length-1} mere`:''}\n\nVil du tilføje alligevel?`))return;
+  }
+  task.staff.push(eid);
+  showToast(`${eid} tilføjet`);
+}
+
 function addStaffToTask(task,ids,sourceTid){
   const clean=[...new Set((ids||[]).filter(id=>empBy(id)))];
   if(!task||!clean.length)return false;
   if(sourceTid&&sourceTid!==task.id){
     const st=taskBy(sourceTid);
     if(st)st.staff=st.staff.filter(id=>!clean.includes(id));
+  }
+  // Conflict check
+  const conflicts=[];
+  clean.forEach(eid=>{
+    if(task.staff.includes(eid))return;
+    const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==task.id&&(!sourceTid||t.id!==sourceTid));
+    empTasks.forEach(t=>{
+      if(task.startDate<t.endDate&&t.startDate<task.endDate){
+        conflicts.push(`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)} – ${fmtDate(t.endDate)})`);
+      }
+    });
+  });
+  if(conflicts.length){
+    if(!confirm(`⚠ Advarsel: Dobbeltbooking!\n\n${conflicts.join('\n')}\n\nVil du tilføje alligevel?`))return false;
   }
   let added=0;
   clean.forEach(id=>{
@@ -2077,8 +2105,7 @@ function renderGantt(days,cfg){
             return;
           }
           if(!dragEid)return;
-          if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
-          if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+          dropEmpOnTask(task,dragEid,dragSrcTid);
           dragEid=null;dragSrcTid=null;
           saveState();
           computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
@@ -2121,8 +2148,7 @@ function renderGantt(days,cfg){
             e.preventDefault();bar.style.outline='';
             if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();return}
             if(!dragEid)return;
-            if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
-            if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+            dropEmpOnTask(task,dragEid,dragSrcTid);
             dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();if(popTarget?.type==='task'&&popTarget.id===task.id)refreshPopup();
           });
           trow.appendChild(bar);
@@ -2160,7 +2186,18 @@ function renderGantt(days,cfg){
     });
     const pbar=document.createElement('div');
     pbar.className='g-proj-bar';
-    pbar.style.cssText=`left:8px;right:8px;background:${c.bar||c.tx+'33'};color:${c.tx}`;
+    // Span from first to last internal task, like normal projects
+    const iStart=internalTasks.reduce((m,t)=>t.startDate<m?t.startDate:m,internalTasks[0].startDate);
+    const iEnd=internalTasks.reduce((m,t)=>t.endDate>m?t.endDate:m,internalTasks[0].endDate);
+    const isi=days.findIndex(d=>ky(d)===iStart);
+    const iei=days.findIndex(d=>ky(d)===iEnd);
+    const istartI=isi===-1?0:isi,iendI=iei===-1?days.length-1:iei;
+    const ibw=(iendI-istartI+1)*dw-2;
+    if(ibw>0){
+      pbar.style.cssText=`left:${istartI*dw+1}px;width:${ibw}px;background:${c.bar}88;color:${c.tx}`;
+    } else {
+      pbar.style.cssText=`left:8px;right:8px;background:${c.bar}88;color:${c.tx}`;
+    }
     // Color dot
     const cdot=document.createElement('span');
     cdot.style.cssText=`position:relative;z-index:5;width:10px;height:10px;border-radius:3px;background:${c.tx};cursor:pointer;flex-shrink:0;border:1px solid rgba(255,255,255,.3);transition:transform .15s;margin-right:6px`;
@@ -2197,8 +2234,7 @@ function renderGantt(days,cfg){
           e.preventDefault();dz.classList.remove('dov');
           if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();return;}
           if(!dragEid)return;
-          if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
-          if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+          dropEmpOnTask(task,dragEid,dragSrcTid);
           dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
         });
         trow.appendChild(dz);
@@ -2240,8 +2276,7 @@ function renderGantt(days,cfg){
             e.preventDefault();bar.style.outline='';
             if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();return;}
             if(!dragEid)return;
-            if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
-            if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+            dropEmpOnTask(task,dragEid,dragSrcTid);
             dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
           });
           trow.appendChild(bar);
