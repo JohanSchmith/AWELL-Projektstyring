@@ -440,7 +440,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .vacation-cell{position:absolute;top:0;bottom:0;pointer-events:none;z-index:3}
 .vacation-cell.ferie{background:rgba(220,40,40,.22);border-left:3px solid #e03030;border-right:1px solid rgba(220,40,40,.3)}
 .vacation-cell.fri{background:rgba(255,160,40,.18);border-left:3px solid #e08820;border-right:1px solid rgba(255,160,40,.3)}
-.vac-marker{position:absolute;top:2px;left:2px;font-size:8px;font-family:'DM Mono',monospace;font-weight:700;z-index:4;pointer-events:none;border-radius:2px;padding:1px 3px}
+.vac-marker{position:absolute;top:2px;left:2px;font-size:8px;font-family:'DM Mono',monospace;font-weight:700;z-index:4;pointer-events:none;border-radius:2px;padding:1px 3px;white-space:nowrap;overflow:hidden;max-width:calc(100% - 4px)}
 .vac-marker.ferie{color:#fff;background:#cc2222;font-weight:700}
 .vac-marker.fri{color:#fff;background:#c07010;font-weight:700}
 /* vacation in flip sidebar rows */
@@ -1964,7 +1964,7 @@ function renderGantt(days,cfg){
           days.forEach((d,i)=>{
             const vac=isVacDay(eid,ky(d));
             if(vac&&!isWk(d)){
-              const el=vacOverlayEl(vac,i*dw,dw);
+              const el=vacOverlayEl(vac,i*dw,dw,eid);
               el.style.zIndex='6';
               trow.appendChild(el);
             }
@@ -2750,13 +2750,14 @@ function vacationsFor(empId){return vacations.filter(v=>v.empId===empId)}
 function isVacDay(empId,dateStr){
   return vacations.find(v=>v.empId===empId&&dateStr>=v.from&&dateStr<=v.to)||null;
 }
-function vacOverlayEl(vac,left,width){
+function vacOverlayEl(vac,left,width,eid){
   const el=document.createElement('div');
   el.className='vacation-cell '+vac.type;
   el.style.cssText=`left:${left}px;width:${width}px`;
   const lbl=document.createElement('div');
   lbl.className='vac-marker '+vac.type;
-  lbl.textContent=vac.type==='ferie'?'Ferie':'Fri';
+  const typeLabel=vac.type==='ferie'?'Ferie':'Fri';
+  lbl.textContent=eid?`${eid}: ${typeLabel}`:typeLabel;
   el.appendChild(lbl);
   return el;
 }
