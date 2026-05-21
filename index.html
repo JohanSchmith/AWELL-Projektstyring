@@ -1346,9 +1346,19 @@ function renderSidebar(days,cfg){
     pr.innerHTML=`${projSortMode==='manual'?'<div class="proj-drag-handle" title="Træk for at sortere"><span></span><span></span><span></span></div>':''}<div class="caret ${isOpen?'open':''}">&#x25B6;</div><div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div><div class="pbadge">${internalTasks.length}</div>`;
     pr.addEventListener('click',e=>{
       if(e.target.closest('.proj-drag-handle'))return;
+      if(e.target.closest('.pdot'))return; // handled separately
       if(collapsed.has('internal'))collapsed.delete('internal');else collapsed.add('internal');
       renderSidebar(days,cfg);renderGantt(days,cfg);
     });
+    const pdot=pr.querySelector('.pdot');
+    if(pdot){
+      pdot.style.cursor='pointer';
+      pdot.title='Skift farve';
+      pdot.addEventListener('click',e=>{
+        e.stopPropagation();
+        openColorPicker(e,'internal',null,nc=>{internalColorId=nc;saveState();render();showToast('Farve opdateret')});
+      });
+    }
     const handle=pr.querySelector('.proj-drag-handle');
     if(handle){
       handle.addEventListener('mousedown',e=>{
@@ -2253,10 +2263,14 @@ function renderGantt(days,cfg){
   const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
-  // Bidirectional scroll sync
+  // Bidirectional scroll sync — remove old handler first to prevent accumulation
+  if(wrap._vScrollHandler){wrap.removeEventListener('scroll',wrap._vScrollHandler);}
+  if(sb._vScrollHandler){sb.removeEventListener('scroll',sb._vScrollHandler);}
   let _syncLock=false;
-  wrap.onscroll=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false};
-  sb.onscroll=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false};
+  wrap._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false;};
+  sb._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false;};
+  wrap.addEventListener('scroll',wrap._vScrollHandler);
+  sb.addEventListener('scroll',sb._vScrollHandler);
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
   // Match sidebar head height to gantt head height so rows align
   requestAnimationFrame(()=>{
