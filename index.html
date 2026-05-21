@@ -1245,7 +1245,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW,vScrollId){
     dragStartScroll=wrap.scrollLeft;
     const vScrollEl=vScrollId?document.getElementById(vScrollId):wrap;
     dragStartTop=vScrollEl?vScrollEl.scrollTop:0;
-    visualPanEl=wrap.querySelector('.gantt');
+    visualPanEl=wrap.querySelector('.gantt,.flip-gantt');
+    // Only use visual pan for horizontal — vertical is handled by vScrollEl
+    // Don't touch translateY as it's managed by scroll sync
     isVisualPanning=false;
     if(visualPanEl)visualPanEl.style.transition='none';
   };
@@ -1298,7 +1300,7 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW,vScrollId){
     }
     if(visualPanEl){
       visualPanEl.style.transition='';
-      visualPanEl.style.transform='';
+      if(isVisualPanning)visualPanEl.style.transform=''; // only clear if we set translateX
     }
     visualPanEl=null;
     isVisualPanning=false;
@@ -3079,11 +3081,12 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
+  const day0str=ky(days[0]); // freeze reference date string
   const getDateAtX=(clientX)=>{
-    const wrapRect=wrap.getBoundingClientRect();
-    const mouseXInGantt=clientX-wrapRect.left+wrap.scrollLeft;
+    const wr=wrap.getBoundingClientRect(); // fresh each call
+    const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
     const dayIdx=Math.floor(mouseXInGantt/cfg.dw)-clickDayInBar;
-    return ky(add(pd(ky(days[0])),dayIdx));
+    return ky(add(pd(day0str),dayIdx));
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
