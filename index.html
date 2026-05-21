@@ -1337,7 +1337,7 @@ function renderSidebar(days,cfg){
   const internalTasks=tasks.filter(t=>!t.projId);
   const renderInternalGroup=()=>{
     if(!internalTasks.length)return;
-    const ci=PC[6];
+    const ci=pcm[internalColorId]||PC[6];
     const isOpen=!collapsed.has('internal');
     const pr=document.createElement('div');
     pr.className='sb-proj';
@@ -2263,14 +2263,22 @@ function renderGantt(days,cfg){
   const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
-  // Bidirectional scroll sync — remove old handler first to prevent accumulation
+  // Bidirectional vertical scroll sync — remove old handlers first
   if(wrap._vScrollHandler){wrap.removeEventListener('scroll',wrap._vScrollHandler);}
   if(sb._vScrollHandler){sb.removeEventListener('scroll',sb._vScrollHandler);}
   let _syncLock=false;
-  wrap._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false;};
-  sb._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false;};
-  wrap.addEventListener('scroll',wrap._vScrollHandler);
-  sb.addEventListener('scroll',sb._vScrollHandler);
+  wrap._vScrollHandler=()=>{
+    if(_syncLock)return;_syncLock=true;
+    sb.scrollTop=wrap.scrollTop;
+    _syncLock=false;
+  };
+  sb._vScrollHandler=()=>{
+    if(_syncLock)return;_syncLock=true;
+    wrap.scrollTop=sb.scrollTop;
+    _syncLock=false;
+  };
+  wrap.addEventListener('scroll',wrap._vScrollHandler,{passive:true});
+  sb.addEventListener('scroll',sb._vScrollHandler,{passive:true});
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
   // Match sidebar head height to gantt head height so rows align
   requestAnimationFrame(()=>{
@@ -3316,7 +3324,7 @@ function renderMyWeek(){
         body.appendChild(grp);
       });
       if(dayInternal.length){
-        const ci=PC[6];
+        const ci=pcm[internalColorId]||PC[6];
         const grp=document.createElement('div');grp.className='mw-group';
         grp.innerHTML=`<div class="mw-ph"><div class="mw-pd" style="background:${ci.tx}"></div>🏢 Intern</div>`;
         dayInternal.forEach(task=>buildMwCard(task,ci,grp));
