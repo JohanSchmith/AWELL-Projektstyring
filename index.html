@@ -973,6 +973,7 @@ let editPid=null,editTid=null,ctxPid=null,ctxTid=null;
 let conflicts={};
 let dragEid=null,dragSrcTid=null,dragEids=null;
 let rzTask=null,rzSide=null,rzStartX=0,rzStartDate=null,rzEndDate=null;
+let flipDragTask=null,flipDragFromEmp=null,flipDragStartX=0,flipDragStartDate=null,flipDragEndDate=null,flipDragDidMove=false;
 let sbClient=null,cloudEnabled=false,cloudReady=false,cloudApplying=false,cloudSaveTimer=null,cloudChannel=null,cloudUser=null,cloudRemoteUpdatedAt=null;
 
 // ── HISTORY (undo/redo) ───────────────────────────────────
@@ -2570,6 +2571,7 @@ function renderFlipGantt(days,cfg){
     const row=document.createElement('div');
     row.className='flip-row';
     row.style.width=totalW+'px';
+    row.dataset.empId=emp.id;
 
     // Background cells
     days.forEach(d=>{
@@ -2673,16 +2675,13 @@ function renderFlipGantt(days,cfg){
       bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
       bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
 
-      // Drag task bar to move employee assignment
-      bar.draggable=true;
-      bar.addEventListener('dragstart',e=>{
-        if(rzTask){e.preventDefault();return;}
-        e.stopPropagation();
-        e.dataTransfer.effectAllowed='move';
-        e.dataTransfer.setData('flip-task-drag',JSON.stringify({taskId:task.id,fromEmpId:emp.id}));
-        setTimeout(()=>bar.style.opacity='.35',0);
-      });
-      bar.addEventListener('dragend',()=>{bar.style.opacity='';});
+      // Drag task bar to move to another day or employee
+      bar.addEventListener('mousedown',e=>{
+        if(rzTask)return;
+        if(e.target.closest('.flip-rz,.flip-bar-cmtbadge'))return;
+        if(e.button!==0)return;
+        startFlipDrag(e,task,emp.id,days,cfg);
+      });;
 
       row.appendChild(bar);
     });
@@ -2727,28 +2726,6 @@ function renderFlipGantt(days,cfg){
       openTaskM(null,emp.id,clickedDate);
     });
 
-    // Drop: receive dragged task bar from another employee row
-    row.addEventListener('dragover',e=>{
-      if(e.dataTransfer.types.includes('flip-task-drag')){
-        e.preventDefault();
-        row.style.outline='2px solid var(--acc)';
-        row.style.outlineOffset='-2px';
-      }
-    });
-    row.addEventListener('dragleave',()=>{row.style.outline='';});
-    row.addEventListener('drop',e=>{
-      row.style.outline='';
-      const raw=e.dataTransfer.getData('flip-task-drag');
-      if(!raw)return;
-      e.preventDefault();
-      try{
-        const{taskId,fromEmpId}=JSON.parse(raw);
-        if(fromEmpId===emp.id)return;
-        const task=taskBy(taskId);
-        if(!task)return;
-        moveEmpOnTask(task,fromEmpId,emp.id);
-      }catch(err){}
-    });
 
     gantt.appendChild(row);
   });
@@ -3089,6 +3066,53 @@ function popDelComment(cid){
 }
 
 // ── RESIZE ────────────────────────────────────────────────
+function startFlipDrag(e,task,empId,days,cfg){
+  e.preventDefault();e.stopPropagation();
+  flipDragTask=task;flipDragFromEmp=empId;
+  flipDragStartX=e.clientX;
+  flipDragStartDate=task.startDate;flipDragEndDate=task.endDate;
+  flipDragDidMove=false;
+  const dur=Math.round((pd(task.endDate)-pd(task.startDate))/(1000*60*60*24));
+  const wrap=document.getElementById('flip-gantt-wrap');
+  // Ghost element
+  const ghost=document.createElement('div');
+  ghost.style.cssText=`position:fixed;pointer-events:none;z-index:999;opacity:.7;background:var(--acc);border-radius:5px;padding:4px 8px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-120%)`;
+  ghost.textContent=task.name;
+  document.body.appendChild(ghost);
+  const onMove=ev=>{
+    ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
+    const delta=Math.round((ev.clientX-flipDragStartX)/cfg.dw);
+    if(Math.abs(delta)>0){
+      flipDragDidMove=true;
+      const ns=ky(add(pd(flipDragStartDate),delta));
+      const ne=ky(add(pd(ns),dur));
+      flipDragTask.startDate=ns;
+      flipDragTask.endDate=ne;
+      renderFlipGantt(days,cfg);
+    }
+  };
+  const onUp=ev=>{
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.body.removeChild(ghost);
+    if(!flipDragTask)return;
+    const task=flipDragTask;
+    const fromEmpId=flipDragFromEmp;
+    flipDragTask=null;flipDragFromEmp=null;
+    // Find which row the mouse is over
+    const els=document.elementsFromPoint(ev.clientX,ev.clientY);
+    const targetRow=els.find(el=>el.classList.contains('flip-row')&&el.dataset.empId);
+    const toEmpId=targetRow?.dataset.empId;
+    if(toEmpId&&toEmpId!==fromEmpId){
+      moveEmpOnTask(task,fromEmpId,toEmpId);
+    } else {
+      computeConflicts();renderFlipGantt(days,cfg);renderFlipSidebar(days,cfg);saveState();
+    }
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
 function startRz(e,task,side,days,cfg){
   e.preventDefault();
   rzTask=task;rzSide=side;rzStartX=e.clientX;rzStartDate=task.startDate;rzEndDate=task.endDate;
