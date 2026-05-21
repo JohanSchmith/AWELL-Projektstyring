@@ -1969,6 +1969,35 @@ function showConflictWarning(lines,onConfirm,onCancel){
   document.getElementById('conflict-cancel-btn').addEventListener('click',()=>{cleanup();if(onCancel)onCancel();},{once:true});
 }
 
+function moveEmpOnTask(task,fromEmpId,toEmpId){
+  // Move fromEmpId → toEmpId on task, with conflict check for toEmpId
+  if(!task||!fromEmpId||!toEmpId)return;
+  if(task.staff.includes(toEmpId)){
+    // toEmpId already on task — just remove fromEmpId
+    task.staff=task.staff.filter(x=>x!==fromEmpId);
+    computeConflicts();render();saveState();
+    showToast(`${fromEmpId} fjernet fra "${task.name}"`);
+    return;
+  }
+  // Conflict check for toEmpId
+  const empTasks=tasks.filter(t=>t.staff.includes(toEmpId)&&t.id!==task.id);
+  const conflicts=empTasks.filter(t=>task.startDate<=t.endDate&&t.startDate<=task.endDate);
+  const doMove=()=>{
+    task.staff=task.staff.filter(x=>x!==fromEmpId);
+    task.staff.push(toEmpId);
+    computeConflicts();render();saveState();
+    showToast(`${fromEmpId} → ${toEmpId} på "${task.name}"`);
+  };
+  if(conflicts.length){
+    showConflictWarning(
+      conflicts.map(t=>`${toEmpId} — overlap med "${t.name}" (${fmtDate(t.startDate)} – ${fmtDate(t.endDate)})`),
+      doMove
+    );
+  } else {
+    doMove();
+  }
+}
+
 function dropEmpOnTask(task,eid,sourceTid){
   if(!eid||!task)return;
   const isMove=sourceTid&&sourceTid!==task.id&&taskBy(sourceTid)?.staff.includes(eid);
@@ -2643,6 +2672,18 @@ function renderFlipGantt(days,cfg){
       });
       bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
       bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+
+      // Drag task bar to move employee assignment
+      bar.draggable=true;
+      bar.addEventListener('dragstart',e=>{
+        if(rzTask){e.preventDefault();return;}
+        e.stopPropagation();
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('flip-task-drag',JSON.stringify({taskId:task.id,fromEmpId:emp.id}));
+        setTimeout(()=>bar.style.opacity='.35',0);
+      });
+      bar.addEventListener('dragend',()=>{bar.style.opacity='';});
+
       row.appendChild(bar);
     });
 
@@ -2684,6 +2725,29 @@ function renderFlipGantt(days,cfg){
       if(dayIdx<0||dayIdx>=days.length)return;
       const clickedDate=ky(days[dayIdx]);
       openTaskM(null,emp.id,clickedDate);
+    });
+
+    // Drop: receive dragged task bar from another employee row
+    row.addEventListener('dragover',e=>{
+      if(e.dataTransfer.types.includes('flip-task-drag')){
+        e.preventDefault();
+        row.style.outline='2px solid var(--acc)';
+        row.style.outlineOffset='-2px';
+      }
+    });
+    row.addEventListener('dragleave',()=>{row.style.outline='';});
+    row.addEventListener('drop',e=>{
+      row.style.outline='';
+      const raw=e.dataTransfer.getData('flip-task-drag');
+      if(!raw)return;
+      e.preventDefault();
+      try{
+        const{taskId,fromEmpId}=JSON.parse(raw);
+        if(fromEmpId===emp.id)return;
+        const task=taskBy(taskId);
+        if(!task)return;
+        moveEmpOnTask(task,fromEmpId,emp.id);
+      }catch(err){}
     });
 
     gantt.appendChild(row);
