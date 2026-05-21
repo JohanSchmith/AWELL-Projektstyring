@@ -3070,9 +3070,11 @@ function startFlipDrag(e,task,empId,days,cfg){
   e.preventDefault();e.stopPropagation();
   flipDragTask=task;flipDragFromEmp=empId;
   flipDragStartX=e.clientX;
-  flipDragStartDate=task.startDate;flipDragEndDate=task.endDate;
+  const origStart=task.startDate;
+  const origEnd=task.endDate;
+  flipDragStartDate=origStart;flipDragEndDate=origEnd;
   flipDragDidMove=false;
-  const dur=Math.round((pd(task.endDate)-pd(task.startDate))/(1000*60*60*24));
+  const dur=Math.round((pd(origEnd)-pd(origStart))/(1000*60*60*24));
   const wrap=document.getElementById('flip-gantt-wrap');
   // Ghost element
   const ghost=document.createElement('div');
@@ -3084,7 +3086,7 @@ function startFlipDrag(e,task,empId,days,cfg){
     const delta=Math.round((ev.clientX-flipDragStartX)/cfg.dw);
     if(Math.abs(delta)>0){
       flipDragDidMove=true;
-      const ns=ky(add(pd(flipDragStartDate),delta));
+      const ns=ky(add(pd(origStart),delta));
       const ne=ky(add(pd(ns),dur));
       flipDragTask.startDate=ns;
       flipDragTask.endDate=ne;
