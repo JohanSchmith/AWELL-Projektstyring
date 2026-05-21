@@ -1181,7 +1181,8 @@ function setView(v){
 }
 
 // ── RENDER ────────────────────────────────────────────────
-function syncHorizontalScroll(wrapId,proxyId,innerId,totalW,vScrollId){\n  // vScrollId: element that handles vertical scroll (defaults to wrap itself if not provided)
+function syncHorizontalScroll(wrapId,proxyId,innerId,totalW,vScrollId){
+  // vScrollId: element that handles vertical scroll (defaults to wrap itself if not provided)
   const wrap=document.getElementById(wrapId);
   if(!wrap)return;
   if(wrap._syncHorizontalCleanup)wrap._syncHorizontalCleanup();
