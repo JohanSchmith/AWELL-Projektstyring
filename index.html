@@ -3083,7 +3083,7 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
     const wrapRect=wrap.getBoundingClientRect();
     const mouseXInGantt=clientX-wrapRect.left+wrap.scrollLeft;
     const dayIdx=Math.floor(mouseXInGantt/cfg.dw)-clickDayInBar;
-    return ky(add(pd(days[0]),dayIdx));
+    return ky(add(pd(ky(days[0])),dayIdx));
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
