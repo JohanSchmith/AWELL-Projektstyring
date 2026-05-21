@@ -3084,14 +3084,13 @@ function startFlipDrag(e,task,empId,days,cfg){
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
     const delta=Math.round((ev.clientX-flipDragStartX)/cfg.dw);
-    if(Math.abs(delta)>0){
-      flipDragDidMove=true;
-      const ns=ky(add(pd(origStart),delta));
-      const ne=ky(add(pd(ns),dur));
-      flipDragTask.startDate=ns;
-      flipDragTask.endDate=ne;
-      renderFlipGantt(days,cfg);
-    }
+    const ns=ky(add(pd(origStart),delta));
+    const ne=ky(add(pd(origStart),delta+dur));
+    ghost.textContent=`${task.name}  ${fmtDate(ns)}–${fmtDate(ne)}`;
+    // Store intended dates without re-rendering
+    flipDragTask._dragNs=ns;
+    flipDragTask._dragNe=ne;
+    if(delta!==0)flipDragDidMove=true;
   };
   const onUp=ev=>{
     document.removeEventListener('mousemove',onMove);
@@ -3101,6 +3100,8 @@ function startFlipDrag(e,task,empId,days,cfg){
     const task=flipDragTask;
     const fromEmpId=flipDragFromEmp;
     flipDragTask=null;flipDragFromEmp=null;
+    // Apply dragged dates
+    if(task._dragNs){task.startDate=task._dragNs;task.endDate=task._dragNe;delete task._dragNs;delete task._dragNe;}
     // Find which row the mouse is over
     const els=document.elementsFromPoint(ev.clientX,ev.clientY);
     const targetRow=els.find(el=>el.classList.contains('flip-row')&&el.dataset.empId);
