@@ -722,7 +722,37 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   </div>
 </div>
 
-<!-- UNIFIED POPUP -->
+<!-- CTX: vac block -->
+<div class="ctx" id="ctx-vac">
+  <div class="ci" onclick="ctxEditVac()">✏️ Rediger periode</div>
+  <div class="cs"></div>
+  <div class="ci red" onclick="ctxDeleteVac()">✕ Slet periode</div>
+</div>
+
+<!-- EDIT VAC MODAL -->
+<div class="mbg" id="mbg-vac-edit">
+  <div class="modal" style="width:460px">
+    <h3>Rediger ferie / fri</h3>
+    <div class="fg"><label>Fra dato</label><input type="date" id="vac-edit-from"></div>
+    <div class="fg"><label>Til dato</label><input type="date" id="vac-edit-to"></div>
+    <div class="fg"><label>Type</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-family:'DM Mono',monospace;color:var(--t2)">
+          <input type="radio" name="vac-edit-type" value="ferie" style="accent-color:var(--warn)"> 🏖 Ferie
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-family:'DM Mono',monospace;color:var(--t2)">
+          <input type="radio" name="vac-edit-type" value="fri" style="accent-color:var(--acc)"> 🌤 Fri dag
+        </label>
+      </div>
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-g" onclick="closeVacEditM()">Annuller</button>
+      <button class="btn btn-p" onclick="saveVacEdit()">Gem ændringer</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="popup" id="popup">
   <div class="pop-head">
     <div class="pop-head-row">
@@ -2908,13 +2938,10 @@ function renderVacView(days,cfg){
       block.style.cssText=`left:${startIdx*dw+2}px;width:${blockW-4}px`;
       block.textContent=vac.type==='ferie'?'🏖 Ferie':'🌤 Fri';
       block.title=`${emp.id}: ${vac.type==='ferie'?'Ferie':'Fri'} ${fmtDate(vac.from)} – ${fmtDate(vac.to)}\nHøjreklik for at slette`;
-      // Right-click on block to delete
+      // Right-click on block to open ctx menu
       block.addEventListener('contextmenu',e=>{
         e.preventDefault();e.stopPropagation();
-        if(confirm(`Slet ${vac.type==='ferie'?'ferie':'fridag'} for ${emp.id}\n${fmtDate(vac.from)} – ${fmtDate(vac.to)}?`)){
-          vacations=vacations.filter(v=>v.id!==vac.id);
-          saveState();render();showToast(`Slettet`);
-        }
+        openCtxVac(e,vac.id);
       });
       row.appendChild(block);
     });
@@ -3006,7 +3033,7 @@ function renderVacEmpChips(){
   const wrap=document.getElementById('vac-emp-chips');
   if(!wrap)return;
   wrap.innerHTML='';
-  emps.forEach(emp=>{
+  emps.filter(emp=>resourceKind(emp)!=="material").forEach(emp=>{
     const sel=vacSelectedEmp===emp.id;
     const chip=document.createElement('div');
     chip.style.cssText=`height:26px;padding:0 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:2px solid ${sel?emp.color:'transparent'};background:${emp.color}22;color:${emp.color};transition:all .12s`;
@@ -3016,7 +3043,7 @@ function renderVacEmpChips(){
   });
 }
 function openVacM(){
-  if(!vacSelectedEmp&&emps.length)vacSelectedEmp=emps[0].id;
+  if(!vacSelectedEmp&&emps.length){const firstEmp=emps.find(e=>resourceKind(e)!=='material');if(firstEmp)vacSelectedEmp=firstEmp.id;}
   renderVacEmpChips();
   document.getElementById('vac-from').value=ky(new Date());
   document.getElementById('vac-to').value=ky(new Date());
@@ -3037,6 +3064,44 @@ function deleteVac(id){
   vacations=vacations.filter(v=>v.id!==id);
   render();saveState();showToast('Periode slettet');
 }
+
+let ctxVacId=null;
+function openCtxVac(e,id){
+  ctxVacId=id;
+  const m=document.getElementById('ctx-vac');
+  m.style.left=Math.min(e.clientX,window.innerWidth-200)+'px';
+  m.style.top=Math.min(e.clientY,window.innerHeight-100)+'px';
+  m.classList.add('on');
+  setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10);
+}
+function ctxDeleteVac(){
+  if(!ctxVacId)return;
+  deleteVac(ctxVacId);
+  ctxVacId=null;
+}
+function ctxEditVac(){
+  if(!ctxVacId)return;
+  const vac=vacations.find(v=>v.id===ctxVacId);
+  if(!vac)return;
+  document.getElementById('vac-edit-from').value=vac.from;
+  document.getElementById('vac-edit-to').value=vac.to;
+  document.querySelectorAll('input[name="vac-edit-type"]').forEach(r=>r.checked=r.value===vac.type);
+  document.getElementById('mbg-vac-edit').classList.add('on');
+}
+function closeVacEditM(){document.getElementById('mbg-vac-edit').classList.remove('on')}
+function saveVacEdit(){
+  const vac=vacations.find(v=>v.id===ctxVacId);
+  if(!vac)return;
+  const from=document.getElementById('vac-edit-from').value;
+  const to=document.getElementById('vac-edit-to').value;
+  const type=document.querySelector('input[name="vac-edit-type"]:checked').value;
+  if(!from||!to||from>to)return;
+  vac.from=from;vac.to=to;vac.type=type;
+  closeVacEditM();
+  render();saveState();
+  showToast('Periode opdateret');
+}
+
 
 
 function onSearch(q){
