@@ -2679,7 +2679,7 @@ function renderFlipGantt(days,cfg){
         if(rzTask)return;
         if(e.target.closest('.flip-rz,.flip-bar-cmtbadge'))return;
         if(e.button!==0)return;
-        startFlipDrag(e,bar,task,emp.id,days,cfg);
+        startFlipDrag(e,bar,task,emp.id,days,cfg,'flip-gantt-wrap');
       });
 
       row.appendChild(bar);
@@ -3064,92 +3064,72 @@ function popDelComment(cid){
   refreshPopup();
 }
 
-// ── RESIZE ────────────────────────────────────────────────
-function startFlipDrag(e,barEl,task,empId,days,cfg){
+function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   e.preventDefault();e.stopPropagation();
+  if(flipDragTask)return;
   flipDragTask=task;flipDragFromEmp=empId;
   const origStart=task.startDate;
   const origEnd=task.endDate;
-  flipDragStartDate=origStart;flipDragEndDate=origEnd;
   flipDragDidMove=false;
   const dur=Math.round((pd(origEnd)-pd(origStart))/(1000*60*60*24));
-  // Calculate which day index the mouse is over at drag start
-  const wrap=document.getElementById('flip-gantt-wrap');
-  const wrapRect=wrap.getBoundingClientRect();
-  const mouseXInGantt=e.clientX-wrapRect.left+wrap.scrollLeft;
-  const startDayIdx=Math.floor(mouseXInGantt/cfg.dw);
-  // How many days into the bar was the click
+  const wrap=document.getElementById(wrapId||'flip-gantt-wrap');
   const barRect=barEl.getBoundingClientRect();
-  const clickDayInBar=Math.floor((e.clientX-barRect.left)/cfg.dw);
-  // The anchor: we want origStart to shift so day under mouse = origStart + clickDayInBar
-  // So when mouse is at dayIdx X, newStart = days[X].date - clickDayInBar
-  const anchorDayOffset=clickDayInBar;
-
-  // Ghost element
+  const clickDayInBar=Math.max(0,Math.floor((e.clientX-barRect.left)/cfg.dw));
   const ghost=document.createElement('div');
-  ghost.style.cssText=`position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)`;
+  ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
-
+  const getDateAtX=(clientX)=>{
+    const wrapRect=wrap.getBoundingClientRect();
+    const mouseXInGantt=clientX-wrapRect.left+wrap.scrollLeft;
+    const dayIdx=Math.floor(mouseXInGantt/cfg.dw)-clickDayInBar;
+    return ky(add(pd(days[0]),dayIdx));
+  };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
-    const mouseX=ev.clientX-wrapRect.left+wrap.scrollLeft;
-    const dayIdx=Math.floor(mouseX/cfg.dw)-anchorDayOffset;
-    if(dayIdx>=0&&dayIdx<days.length){
-      const ns=ky(days[dayIdx]);
-      const ne=ky(add(pd(ns),dur));
-      ghost.textContent=`${task.name}  ${fmtDate(ns)}–${fmtDate(ne)}`;
-      flipDragTask._dragNs=ns;
-      flipDragTask._dragNe=ne;
-      flipDragDidMove=true;
-    } else if(dayIdx<0){
-      const ns=ky(add(pd(days[0]),dayIdx));
-      const ne=ky(add(pd(ns),dur));
-      ghost.textContent=`${task.name}  ${fmtDate(ns)}–${fmtDate(ne)}`;
-      flipDragTask._dragNs=ns;
-      flipDragTask._dragNe=ne;
-      flipDragDidMove=true;
-    }
+    const ns=getDateAtX(ev.clientX);
+    const ne=ky(add(pd(ns),dur));
+    ghost.textContent=task.name+'  '+fmtDate(ns)+'–'+fmtDate(ne);
+    flipDragTask._dragNs=ns;
+    flipDragTask._dragNe=ne;
+    flipDragDidMove=true;
   };
   const onUp=ev=>{
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
-    document.body.removeChild(ghost);
+    if(ghost.parentNode)document.body.removeChild(ghost);
     if(!flipDragTask)return;
-    const task=flipDragTask;
+    const t=flipDragTask;
     const fromEmpId=flipDragFromEmp;
     flipDragTask=null;flipDragFromEmp=null;
-    // Find target employee row
+    const ns=t._dragNs||origStart;
+    const ne=t._dragNe||origEnd;
+    delete t._dragNs;delete t._dragNe;
+    if(!flipDragDidMove)return;
     const els=document.elementsFromPoint(ev.clientX,ev.clientY);
     const targetRow=els.find(el=>el.classList.contains('flip-row')&&el.dataset.empId);
     const toEmpId=targetRow?.dataset.empId;
-    const ns=task._dragNs||task.startDate;
-    const ne=task._dragNe||task.endDate;
-    delete task._dragNs;delete task._dragNe;
     const finalEmpId=toEmpId&&toEmpId!==fromEmpId?toEmpId:fromEmpId;
-    // Conflict check: new dates vs other tasks for all staff (+ toEmpId)
-    const staffToCheck=[...new Set([...task.staff.filter(x=>x!==fromEmpId),finalEmpId])];
+    const staffToCheck=[...new Set([...t.staff.filter(x=>x!==fromEmpId),finalEmpId])];
     const conflictMsgs=[];
     staffToCheck.forEach(eid=>{
-      tasks.filter(t=>t.id!==task.id&&t.staff.includes(eid)).forEach(t=>{
-        if(ns<=t.endDate&&t.startDate<=ne){
-          conflictMsgs.push(`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)}–${fmtDate(t.endDate)})`);
-        }
+      tasks.filter(t2=>t2.id!==t.id&&t2.staff.includes(eid)).forEach(t2=>{
+        if(ns<=t2.endDate&&t2.startDate<=ne)
+          conflictMsgs.push(eid+' — overlap med "'+t2.name+'" ('+fmtDate(t2.startDate)+'–'+fmtDate(t2.endDate)+')');
       });
     });
     const doApply=()=>{
-      task.startDate=ns;task.endDate=ne;
+      t.startDate=ns;t.endDate=ne;
       if(toEmpId&&toEmpId!==fromEmpId){
-        task.staff=task.staff.filter(x=>x!==fromEmpId);
-        if(!task.staff.includes(toEmpId))task.staff.push(toEmpId);
-        showToast(`${fromEmpId} → ${toEmpId}`);
+        t.staff=t.staff.filter(x=>x!==fromEmpId);
+        if(!t.staff.includes(toEmpId))t.staff.push(toEmpId);
+        showToast(fromEmpId+' → '+toEmpId);
       }
-      computeConflicts();renderFlipGantt(days,cfg);renderFlipSidebar(days,cfg);saveState();
+      computeConflicts();render();saveState();
     };
     if(conflictMsgs.length){
-      // Restore original dates visually while showing warning
-      task.startDate=origStart;task.endDate=origEnd;
-      renderFlipGantt(days,cfg);
+      t.startDate=origStart;t.endDate=origEnd;
+      render();
       showConflictWarning(conflictMsgs,doApply);
     } else {
       doApply();
@@ -3159,6 +3139,7 @@ function startFlipDrag(e,barEl,task,empId,days,cfg){
   document.addEventListener('mouseup',onUp);
 }
 
+// ── RESIZE ────────────────────────────────────────────────
 function startRz(e,task,side,days,cfg){
   e.preventDefault();
   rzTask=task;rzSide=side;rzStartX=e.clientX;rzStartDate=task.startDate;rzEndDate=task.endDate;
