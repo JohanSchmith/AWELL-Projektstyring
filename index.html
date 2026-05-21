@@ -1088,7 +1088,7 @@ function taskConflictMsg(tid){
 
 // ── ZOOM / NAV ────────────────────────────────────────────
 function getZoomConfig(){
-  const wrapId=view==='flip'?'flip-gantt-wrap':'gantt-wrap';
+  const wrapId=view==='flip'?'flip-gantt-wrap':view==='vac'?'vac-gantt-wrap':'gantt-wrap';
   const el=document.getElementById(wrapId);
   const W=(el&&el.clientWidth>0)?el.clientWidth:window.innerWidth-240||900;
   switch(zoomMode){
@@ -2939,11 +2939,12 @@ function renderVacView(days,cfg){
     gantt.appendChild(row);
   });
 
-  // ── Drag-to-pan ──
+  // ── Drag-to-pan + scroll to buffer center ──
   syncHorizontalScroll('vac-gantt-wrap',null,null,totalW);
+  const wrap=document.getElementById('vac-gantt-wrap');
+  if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
 
   // Sync vertical scroll between sidebar and gantt
-  const wrap=document.getElementById('vac-gantt-wrap');
   wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
 }
 
