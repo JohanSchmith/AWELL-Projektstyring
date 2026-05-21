@@ -226,6 +226,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 }
 .popup.show{display:flex;animation:popIn .14s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.95) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes conflictPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.2)}}
 /* Header */
 .pop-head{padding:13px 14px 0;flex-shrink:0}
 .pop-head-row{display:flex;align-items:flex-start;gap:9px;margin-bottom:10px}
@@ -732,6 +733,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="ci" onclick="ctxEditVac()">✏️ Rediger periode</div>
   <div class="cs"></div>
   <div class="ci red" onclick="ctxDeleteVac()">✕ Slet periode</div>
+</div>
+
+<!-- CONFLICT WARNING MODAL -->
+<div class="mbg" id="mbg-conflict">
+  <div class="modal" style="width:460px;border:1px solid var(--warn);box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,159,67,.2)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div id="conflict-icon" style="font-size:22px;animation:conflictPulse 1s ease-in-out infinite">⚠</div>
+      <h3 style="color:var(--warn);margin:0">Dobbeltbooking!</h3>
+    </div>
+    <div id="conflict-msg-body" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:16px;background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.2);border-radius:8px;padding:10px 12px"></div>
+    <p style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;margin-bottom:16px">Vil du fortsætte alligevel?</p>
+    <div class="m-acts">
+      <button class="btn btn-g" id="conflict-cancel-btn">Annuller</button>
+      <button class="btn" id="conflict-confirm-btn" style="background:var(--warn);color:#0e0e12;border-color:var(--warn)">Gem alligevel</button>
+    </div>
+  </div>
 </div>
 
 <!-- EDIT VAC MODAL -->
@@ -1932,20 +1949,38 @@ function teamDS(e,teamId){
   dragEid=null;dragSrcTid=null;
   e.dataTransfer.effectAllowed='copy';
 }
+// ── CONFLICT WARNING ─────────────────────────────────────
+function showConflictWarning(lines,onConfirm,onCancel){
+  document.getElementById('conflict-msg-body').innerHTML=lines.map(l=>`<div>⚠ ${l}</div>`).join('');
+  const modal=document.getElementById('mbg-conflict');
+  modal.classList.add('on');
+  const confirmBtn=document.getElementById('conflict-confirm-btn');
+  const cancelBtn=document.getElementById('conflict-cancel-btn');
+  const cleanup=()=>{
+    modal.classList.remove('on');
+    confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+    cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  };
+  document.getElementById('conflict-confirm-btn').addEventListener('click',()=>{cleanup();onConfirm();},{once:true});
+  document.getElementById('conflict-cancel-btn').addEventListener('click',()=>{cleanup();if(onCancel)onCancel();},{once:true});
+}
+
 function dropEmpOnTask(task,eid,sourceTid){
   if(!eid||!task)return;
-  // Only remove from source if this is a move (eid was on source task)
   const isMove=sourceTid&&sourceTid!==task.id&&taskBy(sourceTid)?.staff.includes(eid);
   if(isMove){const st=taskBy(sourceTid);if(st)st.staff=st.staff.filter(x=>x!==eid);}
   if(task.staff.includes(eid))return;
-  // Conflict check — exclude source task only if it's a move
   const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==task.id&&!(isMove&&t.id===sourceTid));
   const conflicts=empTasks.filter(t=>task.startDate<=t.endDate&&t.startDate<=task.endDate);
+  const doAdd=()=>{task.staff.push(eid);showToast(`${eid} tilføjet`);};
   if(conflicts.length){
-    if(!confirm(`⚠ Advarsel: Dobbeltbooking!\n\n${eid} — overlap med "${conflicts[0].name}" (${fmtDate(conflicts[0].startDate)} – ${fmtDate(conflicts[0].endDate)})${conflicts.length>1?`\nog ${conflicts.length-1} mere`:''}\n\nVil du tilføje alligevel?`))return;
+    showConflictWarning(
+      conflicts.map(t=>`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)} – ${fmtDate(t.endDate)})`),
+      doAdd
+    );
+  } else {
+    doAdd();
   }
-  task.staff.push(eid);
-  showToast(`${eid} tilføjet`);
 }
 
 function addStaffToTask(task,ids,sourceTid){
@@ -1968,7 +2003,11 @@ function addStaffToTask(task,ids,sourceTid){
     });
   });
   if(conflictMsgs.length){
-    if(!confirm(`⚠ Advarsel: Dobbeltbooking!\n\n${conflictMsgs.join('\n')}\n\nVil du tilføje alligevel?`))return false;
+    showConflictWarning(conflictMsgs,()=>{
+      clean.forEach(id=>{if(!task.staff.includes(id)){task.staff.push(id);}});
+      showToast(clean.length>1?`${clean.length} tilføjet`:`${clean[0]} tilføjet`);
+    });
+    return false;
   }
   let added=0;
   clean.forEach(id=>{
@@ -2306,6 +2345,8 @@ function renderGantt(days,cfg){
   if(wrap._vScrollHandler)wrap.removeEventListener('scroll',wrap._vScrollHandler);
   if(sb._vScrollHandler)sb.removeEventListener('scroll',sb._vScrollHandler);
   let _syncLock=false;
+  // Scroll sync: gantt-wrap contains a sticky header, so scrollTop=0 means header is visible
+  // sb-rows has no header, so we sync directly — they both scroll by the same row heights
   wrap._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false;};
   sb._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false;};
   wrap.addEventListener('scroll',wrap._vScrollHandler,{passive:true});
@@ -2315,7 +2356,17 @@ function renderGantt(days,cfg){
   requestAnimationFrame(()=>{
     const ghead=gantt.querySelector('.g-head');
     const sbHead=document.querySelector('.sb-head');
-    if(ghead&&sbHead){const h=ghead.offsetHeight;sbHead.style.height=h+'px';sbHead.style.minHeight=h+'px';}
+    if(ghead&&sbHead){
+      const h=ghead.offsetHeight;
+      sbHead.style.height=h+'px';
+      sbHead.style.minHeight=h+'px';
+      // Add bottom padding to sb-rows so it can scroll as far down as gantt-wrap
+      const ganttScrollable=wrap.scrollHeight-wrap.clientHeight;
+      const sbScrollable=sb.scrollHeight-sb.clientHeight;
+      if(ganttScrollable>sbScrollable){
+        sb.style.paddingBottom=(ganttScrollable-sbScrollable)+'px';
+      }
+    }
   });
 }
 
@@ -2998,7 +3049,19 @@ function openColorPicker(e,type,id,cb){
 }
 
 // ── CTX ───────────────────────────────────────────────────
-function openCtxTask(e,tid){ctxTid=tid;const m=document.getElementById('ctx-task');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.classList.add('on');setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10)}
+function openCtxTask(e,tid){
+  ctxTid=tid;
+  const m=document.getElementById('ctx-task');
+  m.style.left=e.clientX+'px';
+  m.style.top=e.clientY+'px';
+  m.classList.add('on');
+  requestAnimationFrame(()=>{
+    const r=m.getBoundingClientRect();
+    if(r.bottom>window.innerHeight)m.style.top=(e.clientY-(r.bottom-window.innerHeight)-8)+'px';
+    if(r.right>window.innerWidth)m.style.left=(e.clientX-(r.right-window.innerWidth)-8)+'px';
+  });
+  setTimeout(()=>document.addEventListener('click',()=>m.classList.remove('on'),{once:true}),10);
+}
 function openCtxProj(e,pid){
   ctxPid=pid;const proj=projBy(pid);
   document.getElementById('ctx-hold-btn').textContent=proj?.status==='hold'?'▶ Fjern hold':'⏸ Sæt på hold';
@@ -3104,9 +3167,14 @@ function saveTask(){
     });
   });
   if(conflictingEmps.length){
-    const msg=`⚠ Advarsel: Dobbeltbooking!\n\n${conflictingEmps.join('\n')}\n\nVil du gemme opgaven alligevel?`;
-    if(!confirm(msg))return;
+    showConflictWarning(conflictingEmps,()=>{
+      _doSaveTask(name,pid,s,e);
+    });
+    return;
   }
+  _doSaveTask(name,pid,s,e);
+}
+function _doSaveTask(name,pid,s,e){
 
   if(editTid){
     const t=taskBy(editTid);
