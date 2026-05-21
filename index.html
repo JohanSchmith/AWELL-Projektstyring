@@ -2348,7 +2348,16 @@ function renderGantt(days,cfg){
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
   if(wrap._vScrollHandler)wrap.removeEventListener('scroll',wrap._vScrollHandler);
   if(sb._vScrollHandler)sb.removeEventListener('scroll',sb._vScrollHandler);
-  // Vertical scroll: sidebar drives, gantt content translates to match
+  // Forward mouse wheel vertical scroll on gantt-wrap to sidebar
+  if(wrap._wheelHandler)wrap.removeEventListener('wheel',wrap._wheelHandler);
+  wrap._wheelHandler=(e)=>{
+    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
+      e.preventDefault();
+      sb.scrollTop+=e.deltaY;
+    }
+  };
+  wrap.addEventListener('wheel',wrap._wheelHandler,{passive:false});
+
   sb._vScrollHandler=()=>{
     gantt.style.transform=`translateY(${-sb.scrollTop}px)`;
   };
