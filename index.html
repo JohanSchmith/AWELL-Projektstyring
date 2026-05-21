@@ -1427,6 +1427,28 @@ function renderSidebar(days,cfg){
     }
   });
 
+  // Internal tasks section
+  const internalTasks=tasks.filter(t=>!t.projId);
+  if(internalTasks.length){
+    const ci=PC[6];
+    const pr=document.createElement('div');
+    pr.className='sb-proj';
+    pr.style.borderLeft=`3px solid ${ci.tx}`;
+    pr.innerHTML=`<div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div>`;
+    rows.appendChild(pr);
+    internalTasks.forEach(task=>{
+      const hasCf=ctids.has(task.id);
+      const tr=document.createElement('div');
+      tr.className='sb-task'+(selectedTid===task.id?' selected':'');
+      tr.innerHTML=`<div class="tdot" style="background:${ci.tx}"></div>
+        <div class="tname-sb">${task.name}</div>
+        ${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
+      tr.addEventListener('click',()=>scrollToAndOpen(task.id));
+      tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
+      rows.appendChild(tr);
+    });
+  }
+
   // Archive section
   const archived=projs.filter(p=>p.status==='archived');
   const arcCount=document.getElementById('arc-count');
@@ -2894,6 +2916,22 @@ function saveTask(){
   const s=document.getElementById('tm-s').value;
   const e=document.getElementById('tm-e').value;
   if(!name||!s||!e)return;
+
+  // ── Konflikt-tjek ──
+  const conflictingEmps=[];
+  tmStaff.forEach(eid=>{
+    const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==(editTid||null));
+    empTasks.forEach(t=>{
+      if(s<t.endDate&&t.startDate<e){
+        conflictingEmps.push(`${eid} (overlap med "${t.name}")`);
+      }
+    });
+  });
+  if(conflictingEmps.length){
+    const msg=`⚠ Advarsel: Dobbeltbooking!\n\n${conflictingEmps.join('\n')}\n\nVil du gemme opgaven alligevel?`;
+    if(!confirm(msg))return;
+  }
+
   if(editTid){
     const t=taskBy(editTid);
     if(t){t.name=name;t.projId=pid;t.startDate=s;t.endDate=e;t.staff=tmStaff;}
@@ -3125,8 +3163,10 @@ function renderMyWeek(){
     col.innerHTML=`<div class="mw-dh"><span class="mw-dk">${DKD[d.getDay()]}</span><span class="mw-dn">${d.getDate()}. ${DKMs[d.getMonth()]}</span></div>`;
     col.appendChild(body);grid.appendChild(col);
     const dayProjs=projs.filter(proj=>tasksOf(proj.id).some(t=>dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson))));
-    if(!dayProjs.length)body.innerHTML='<div class="mw-empty">Ingen opgaver</div>';
-    else dayProjs.forEach(proj=>{
+    const dayInternal=tasks.filter(t=>!t.projId&&dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson)));
+    if(!dayProjs.length&&!dayInternal.length)body.innerHTML='<div class="mw-empty">Ingen opgaver</div>';
+    else{
+      dayProjs.forEach(proj=>{
       const c=pcm[proj.colorId]||PC[7];
       const ts=tasksOf(proj.id).filter(t=>dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson)));
       const grp=document.createElement('div');grp.className='mw-group';
@@ -3140,6 +3180,20 @@ function renderMyWeek(){
       });
       body.appendChild(grp);
     });
+      if(dayInternal.length){
+        const ci=PC[6];
+        const grp=document.createElement('div');grp.className='mw-group';
+        grp.innerHTML=`<div class="mw-ph"><div class="mw-pd" style="background:${ci.tx}"></div>🏢 Intern</div>`;
+        dayInternal.forEach(task=>{
+          const rel=mwPerson?task.staff.filter(x=>x===mwPerson):task.staff;
+          const card=document.createElement('div');card.className='mw-card';
+          card.style.cssText=`background:${ci.tx}28;border-left-color:${ci.tx};border:1px solid ${ci.tx}44`;
+          card.innerHTML=`<div class="mw-tm">${task.name}</div><div class="mw-chips">${rel.map(eid=>{const emp=empBy(eid);return emp?`<div class="mw-ec" style="background:${emp.color}22;color:${emp.color}">${eid}</div>`:''}).join('')}</div>`;
+          grp.appendChild(card);
+        });
+        body.appendChild(grp);
+      }
+    }
   }
 }
 function setMWP(id){mwPerson=id;renderMyWeek()}
