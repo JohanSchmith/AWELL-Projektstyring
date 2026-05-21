@@ -448,7 +448,27 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .flip-vac-row.ferie{background:rgba(200,30,30,.25);color:#ff4444;font-weight:700;border-left:2px solid #cc2222}
 .flip-vac-row.fri{background:rgba(255,160,40,.18);color:#e08820;font-weight:700;border-left:2px solid #c07010}
 
-/* ── SØGNING ── */
+/* ── FERIE OVERSIGT VIEW ── */
+#vvac{display:none;flex-direction:column;flex:1;overflow:hidden}
+.vac-view-inner{display:flex;flex:1;overflow:hidden}
+.vac-sb{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden}
+.vac-sb-head{height:56px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--b1);font-size:11px;font-weight:700;color:var(--t2);flex-shrink:0}
+.vac-sb-rows{flex:1;overflow-y:auto;overflow-x:hidden}
+.vac-sb-row{height:var(--row-h);display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--b1);gap:8px;font-size:11px;font-family:'DM Mono',monospace;font-weight:700}
+.vac-emp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.vac-timeline-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.vac-gantt-wrap{flex:1;overflow:auto}
+.vac-gantt{display:flex;flex-direction:column;min-width:max-content;position:relative}
+.vac-g-row{height:var(--row-h);display:flex;position:relative;border-bottom:1px solid var(--b1);background:var(--s1)}
+.vac-g-row:nth-child(even){background:var(--s2)}
+.vac-block{position:absolute;top:4px;bottom:4px;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-family:'DM Mono',monospace;font-weight:700;overflow:hidden;white-space:nowrap}
+.vac-block.ferie{background:#cc2222;color:#fff}
+.vac-block.fri{background:#c07010;color:#fff}
+.vac-legend{display:flex;gap:16px;padding:8px 14px;border-top:1px solid var(--b1);flex-shrink:0;align-items:center}
+.vac-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'DM Mono',monospace;color:var(--t2)}
+.vac-legend-dot{width:12px;height:12px;border-radius:3px}
+
+
 .search-wrap{position:relative;display:flex;align-items:center;padding:0 6px;height:100%;min-width:120px;max-width:200px;flex:1 1 160px}
 .search-input{background:var(--s3);border:1px solid var(--b1);border-radius:6px;color:var(--t1);font-family:'DM Mono',monospace;font-size:11px;padding:5px 10px 5px 28px;outline:none;width:100%;transition:border-color .15s}
 .search-input:focus{border-color:var(--acc)}
@@ -543,6 +563,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <button class="vt on" id="tv-plan" onclick="setView('plan')">Disponering</button>
       <button class="vt" id="tv-flip" onclick="setView('flip')">Ressourcer</button>
       <button class="vt" id="tv-week" onclick="setView('week')">Min uge</button>
+      <button class="vt" id="tv-vac" onclick="setView('vac')">Ferie & fri</button>
     </div>
   </div>
   <div class="tb-r">
@@ -651,6 +672,25 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       </div>
       <div class="flip-gantt-wrap" id="flip-gantt-wrap">
         <div class="flip-gantt" id="flip-gantt"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VACATION OVERVIEW VIEW -->
+<div class="main" id="vvac" style="display:none">
+  <div class="vac-view-inner">
+    <div class="vac-sb">
+      <div class="vac-sb-head">Medarbejder</div>
+      <div class="vac-sb-rows" id="vac-sb-rows"></div>
+    </div>
+    <div class="vac-timeline-pane">
+      <div class="vac-gantt-wrap" id="vac-gantt-wrap">
+        <div class="vac-gantt" id="vac-gantt"></div>
+      </div>
+      <div class="vac-legend">
+        <span class="vac-legend-item"><span class="vac-legend-dot" style="background:#cc2222"></span>Ferie</span>
+        <span class="vac-legend-item"><span class="vac-legend-dot" style="background:#c07010"></span>Fri</span>
       </div>
     </div>
   </div>
@@ -1077,9 +1117,11 @@ function setView(v){
   document.getElementById('vplan').style.display=v==='plan'?'flex':'none';
   document.getElementById('vweek').style.display=v==='week'?'flex':'none';
   document.getElementById('vflip').style.display=v==='flip'?'flex':'none';
+  document.getElementById('vvac').style.display=v==='vac'?'flex':'none';
   document.getElementById('tv-plan').classList.toggle('on',v==='plan');
   document.getElementById('tv-week').classList.toggle('on',v==='week');
   document.getElementById('tv-flip').classList.toggle('on',v==='flip');
+  document.getElementById('tv-vac').classList.toggle('on',v==='vac');
   render();
 }
 
@@ -1225,6 +1267,7 @@ function render(){
   document.getElementById('wk-lbl').textContent=lbl;
   if(view==='plan'){renderSidebar(days,cfg);renderPalette();renderGantt(days,cfg)}
   else if(view==='flip'){renderFlipSidebar(days,cfg);renderPalette();renderFlipGantt(days,cfg)}
+  else if(view==='vac'){renderVacView(days,cfg)}
   else renderMyWeek();
   saveState();
   // Force archive section visibility after layout settles
@@ -2711,6 +2754,127 @@ function closeEmpM(){document.getElementById('mbg-emp').classList.remove('on')}
 function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;emps.push({id:name,color:selEC,type:resourceType});closeEmpM();render();showToast(`${name} tilføjet`)}
 function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class="sw ${selC===c.id?'on':''}" style="background:${c.bg};border-color:${c.tx}" data-cid="${c.id}" onclick="selC='${c.id}';document.querySelectorAll('#${id} .sw').forEach(s=>s.classList.toggle('on',s.dataset.cid==='${c.id}'))"></div>`).join('')}
 function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div class="sw ${selEC===c?'on':''}" style="background:${c}33;border-color:${c}" data-c="${c}" onclick="selEC='${c}';document.querySelectorAll('#em-cr .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==='${c}'))"></div>`).join('')}
+
+// ── FERIE & FRI OVERSIGT ──────────────────────────────────
+function renderVacView(days,cfg){
+  const sb=document.getElementById('vac-sb-rows');
+  const gantt=document.getElementById('vac-gantt');
+  sb.innerHTML='';gantt.innerHTML='';
+
+  const dw=cfg.dw;
+  const totalW=days.length*dw;
+
+  // Header row with dates
+  const head=document.createElement('div');
+  head.style.cssText=`display:flex;position:sticky;top:0;z-index:20;background:var(--s1);border-bottom:1px solid var(--b1);min-width:${totalW}px`;
+  // Month row
+  const monthRow=document.createElement('div');
+  monthRow.style.cssText='display:flex;height:18px;border-bottom:1px solid var(--b1);';
+  let curMonth=-1,monthStart=0;
+  days.forEach((d,i)=>{
+    if(d.getMonth()!==curMonth){
+      if(curMonth>=0){
+        const mc=document.createElement('div');
+        mc.style.cssText=`width:${(i-monthStart)*dw}px;flex-shrink:0;padding:0 6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);border-right:1px solid var(--b1);display:flex;align-items:center;text-transform:uppercase;letter-spacing:.06em;overflow:hidden;white-space:nowrap`;
+        mc.textContent=`${DKMs[curMonth]}`;
+        monthRow.appendChild(mc);
+      }
+      curMonth=d.getMonth();monthStart=i;
+    }
+  });
+  // last month cell
+  const mc=document.createElement('div');
+  mc.style.cssText=`flex:1;padding:0 6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);display:flex;align-items:center;text-transform:uppercase;letter-spacing:.06em;overflow:hidden;white-space:nowrap`;
+  mc.textContent=`${DKMs[curMonth]}`;
+  monthRow.appendChild(mc);
+  head.appendChild(monthRow);
+
+  // Day row
+  const dayRow=document.createElement('div');
+  dayRow.style.cssText='display:flex;height:38px;';
+  const today=ky(new Date());
+  days.forEach(d=>{
+    const isWknd=isWk(d);
+    const isTd=ky(d)===today;
+    const cell=document.createElement('div');
+    cell.style.cssText=`width:${dw}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:5px;gap:1px;border-right:1px solid var(--b1);${isWknd?'background:var(--s2)':''}${isTd?';background:rgba(91,143,255,.08)':''}`;
+    const dn=document.createElement('div');
+    dn.style.cssText=`font-size:9px;font-family:'DM Mono',monospace;color:${isTd?'var(--acc)':isWknd?'var(--t3)':'var(--t2)'}`;
+    dn.textContent=['S','M','T','O','T','F','L'][d.getDay()];
+    const dd=document.createElement('div');
+    dd.style.cssText=`font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${isTd?'var(--acc)':isWknd?'var(--t3)':'var(--t1)'}`;
+    dd.textContent=d.getDate();
+    cell.appendChild(dn);cell.appendChild(dd);
+    dayRow.appendChild(cell);
+  });
+  head.appendChild(dayRow);
+  gantt.appendChild(head);
+
+  // Filter: only employees with at least one vacation in visible range
+  const rangeStart=ky(days[0]),rangeEnd=ky(days[days.length-1]);
+  const empsWithVac=emps.filter(emp=>
+    vacations.some(v=>v.empId===emp.id&&v.to>=rangeStart&&v.from<=rangeEnd)
+  );
+
+  if(!empsWithVac.length){
+    // Show all employees if no one has vacation, with empty rows
+    const noVac=document.createElement('div');
+    noVac.style.cssText='padding:20px;font-size:12px;font-family:DM Mono,monospace;color:var(--t3)';
+    noVac.textContent='Ingen ferie eller fridage i denne periode';
+    gantt.appendChild(noVac);
+    return;
+  }
+
+  empsWithVac.forEach(emp=>{
+    // Sidebar row
+    const sbRow=document.createElement('div');
+    sbRow.className='vac-sb-row';
+    sbRow.innerHTML=`<div class="vac-emp-dot" style="background:${emp.color}"></div>${emp.id}`;
+    sb.appendChild(sbRow);
+
+    // Gantt row
+    const row=document.createElement('div');
+    row.className='vac-g-row';
+    row.style.minWidth=totalW+'px';
+
+    // Weekend shading + today
+    days.forEach((d,i)=>{
+      if(isWk(d)||ky(d)===today){
+        const shade=document.createElement('div');
+        shade.style.cssText=`position:absolute;top:0;bottom:0;left:${i*dw}px;width:${dw}px;${ky(d)===today?'background:rgba(91,143,255,.06)':'background:var(--s2)'};pointer-events:none`;
+        row.appendChild(shade);
+      }
+    });
+
+    // Vacation blocks — merge consecutive days of same vacation period
+    const empVacs=vacations.filter(v=>v.empId===emp.id&&v.to>=rangeStart&&v.from<=rangeEnd);
+    empVacs.forEach(vac=>{
+      // Find start and end index in days array
+      let startIdx=-1,endIdx=-1;
+      days.forEach((d,i)=>{
+        const dk=ky(d);
+        if(dk>=vac.from&&dk<=vac.to){
+          if(startIdx===-1)startIdx=i;
+          endIdx=i;
+        }
+      });
+      if(startIdx===-1)return;
+      const blockW=(endIdx-startIdx+1)*dw;
+      const block=document.createElement('div');
+      block.className='vac-block '+vac.type;
+      block.style.cssText=`left:${startIdx*dw+2}px;width:${blockW-4}px`;
+      block.textContent=vac.type==='ferie'?'🏖 Ferie':'🌤 Fri';
+      block.title=`${emp.id}: ${vac.type==='ferie'?'Ferie':'Fri'} ${fmtDate(vac.from)} – ${fmtDate(vac.to)}`;
+      row.appendChild(block);
+    });
+
+    gantt.appendChild(row);
+  });
+
+  // Sync scroll between sidebar and gantt
+  const wrap=document.getElementById('vac-gantt-wrap');
+  wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
+}
 
 // ── MIN UGE ───────────────────────────────────────────────
 function renderMyWeek(){
