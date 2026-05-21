@@ -2680,8 +2680,8 @@ function renderFlipGantt(days,cfg){
         if(rzTask)return;
         if(e.target.closest('.flip-rz,.flip-bar-cmtbadge'))return;
         if(e.button!==0)return;
-        startFlipDrag(e,task,emp.id,days,cfg);
-      });;
+        startFlipDrag(e,bar,task,emp.id,days,cfg);
+      });
 
       row.appendChild(bar);
     });
@@ -3066,10 +3066,14 @@ function popDelComment(cid){
 }
 
 // ── RESIZE ────────────────────────────────────────────────
-function startFlipDrag(e,task,empId,days,cfg){
+function startFlipDrag(e,barEl,task,empId,days,cfg){
   e.preventDefault();e.stopPropagation();
   flipDragTask=task;flipDragFromEmp=empId;
-  flipDragStartX=e.clientX;
+  // Account for where in the bar the user clicked
+  const barRect=barEl.getBoundingClientRect();
+  const clickOffsetInBar=e.clientX-barRect.left;
+  const clickOffsetDays=Math.round(clickOffsetInBar/cfg.dw);
+  flipDragStartX=e.clientX-clickOffsetInBar+clickOffsetDays*cfg.dw;
   const origStart=task.startDate;
   const origEnd=task.endDate;
   flipDragStartDate=origStart;flipDragEndDate=origEnd;
@@ -3100,16 +3104,40 @@ function startFlipDrag(e,task,empId,days,cfg){
     const task=flipDragTask;
     const fromEmpId=flipDragFromEmp;
     flipDragTask=null;flipDragFromEmp=null;
-    // Apply dragged dates
-    if(task._dragNs){task.startDate=task._dragNs;task.endDate=task._dragNe;delete task._dragNs;delete task._dragNe;}
-    // Find which row the mouse is over
+    // Find target employee row
     const els=document.elementsFromPoint(ev.clientX,ev.clientY);
     const targetRow=els.find(el=>el.classList.contains('flip-row')&&el.dataset.empId);
     const toEmpId=targetRow?.dataset.empId;
-    if(toEmpId&&toEmpId!==fromEmpId){
-      moveEmpOnTask(task,fromEmpId,toEmpId);
-    } else {
+    const ns=task._dragNs||task.startDate;
+    const ne=task._dragNe||task.endDate;
+    delete task._dragNs;delete task._dragNe;
+    const finalEmpId=toEmpId&&toEmpId!==fromEmpId?toEmpId:fromEmpId;
+    // Conflict check: new dates vs other tasks for all staff (+ toEmpId)
+    const staffToCheck=[...new Set([...task.staff.filter(x=>x!==fromEmpId),finalEmpId])];
+    const conflictMsgs=[];
+    staffToCheck.forEach(eid=>{
+      tasks.filter(t=>t.id!==task.id&&t.staff.includes(eid)).forEach(t=>{
+        if(ns<=t.endDate&&t.startDate<=ne){
+          conflictMsgs.push(`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)}–${fmtDate(t.endDate)})`);
+        }
+      });
+    });
+    const doApply=()=>{
+      task.startDate=ns;task.endDate=ne;
+      if(toEmpId&&toEmpId!==fromEmpId){
+        task.staff=task.staff.filter(x=>x!==fromEmpId);
+        if(!task.staff.includes(toEmpId))task.staff.push(toEmpId);
+        showToast(`${fromEmpId} → ${toEmpId}`);
+      }
       computeConflicts();renderFlipGantt(days,cfg);renderFlipSidebar(days,cfg);saveState();
+    };
+    if(conflictMsgs.length){
+      // Restore original dates visually while showing warning
+      task.startDate=origStart;task.endDate=origEnd;
+      renderFlipGantt(days,cfg);
+      showConflictWarning(conflictMsgs,doApply);
+    } else {
+      doApply();
     }
   };
   document.addEventListener('mousemove',onMove);
