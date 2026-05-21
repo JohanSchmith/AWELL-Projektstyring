@@ -366,10 +366,15 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .mw-group{margin-bottom:7px}
 .mw-ph{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);padding:2px 5px;margin-bottom:2px;display:flex;align-items:center;gap:4px}
 .mw-pd{width:6px;height:6px;border-radius:2px;flex-shrink:0}
-.mw-card{border-radius:6px;padding:5px 7px;margin-bottom:2px;border-left:2px solid transparent}
+.mw-card{border-radius:6px;padding:5px 7px;margin-bottom:2px;border-left:2px solid transparent;cursor:pointer;transition:filter .12s}
+.mw-card:hover{filter:brightness(1.1)}
+.mw-card.drag-over{outline:2px solid var(--acc);outline-offset:1px}
 .mw-tm{font-size:11px;font-weight:700;margin-bottom:3px}
 .mw-chips{display:flex;flex-wrap:wrap;gap:2px}
-.mw-ec{height:16px;padding:0 5px;border-radius:3px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center}
+.mw-add-btn{width:100%;margin-top:4px;padding:5px 7px;border-radius:6px;border:1px dashed var(--b2);background:transparent;color:var(--t3);font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;text-align:left;transition:all .12s}
+.mw-add-btn:hover{border-color:var(--acc);color:var(--acc)}
+.mw-ec{height:16px;padding:0 5px;border-radius:3px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;position:relative}
+.mw-ec:hover::after{content:'×';position:absolute;right:-2px;top:-2px;width:10px;height:10px;border-radius:50%;background:rgba(210,55,55,.8);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;line-height:1}
 .mw-empty{padding:16px;text-align:center;font-size:11px;color:var(--t3);font-family:'DM Mono',monospace}
 
 /* ── FLIP VIEW: medarbejdere × opgaver ── */
@@ -3211,45 +3216,156 @@ function renderMyWeek(){
   document.getElementById('mw-sub').textContent=`${wkMon.getDate()} ${DKMs[wkMon.getMonth()]} – ${wkFri.getDate()} ${DKMs[wkFri.getMonth()]} ${wkFri.getFullYear()}`+(mwPerson?` · ${mwPerson}`:'');
   document.getElementById('mw-filter').innerHTML=`<button class="mw-fb ${!mwPerson?'on':''}" style="${!mwPerson?'background:var(--acc);color:#fff;border-color:var(--acc)':''}" onclick="setMWP(null)">Alle</button>`+emps.map(e=>`<button class="mw-fb ${mwPerson===e.id?'on':''}" style="${mwPerson===e.id?`background:${e.color};color:#0e0e12;border-color:${e.color}`:''}" onclick="setMWP('${e.id}')">${e.id}</button>`).join('');
   const today=ky(new Date()),grid=document.getElementById('mw-grid');grid.innerHTML='';
+
   for(let i=0;i<5;i++){
     const d=add(wkMon,i),dk=ky(d);
     const col=document.createElement('div');col.className='mw-dc'+(dk===today?' td':'');
     const body=document.createElement('div');body.className='mw-db';
     col.innerHTML=`<div class="mw-dh"><span class="mw-dk">${DKD[d.getDay()]}</span><span class="mw-dn">${d.getDate()}. ${DKMs[d.getMonth()]}</span></div>`;
     col.appendChild(body);grid.appendChild(col);
+
     const dayProjs=projs.filter(proj=>tasksOf(proj.id).some(t=>dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson))));
     const dayInternal=tasks.filter(t=>!t.projId&&dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson)));
-    if(!dayProjs.length&&!dayInternal.length)body.innerHTML='<div class="mw-empty">Ingen opgaver</div>';
-    else{
+
+    if(!dayProjs.length&&!dayInternal.length){
+      body.innerHTML='<div class="mw-empty">Ingen opgaver</div>';
+    } else {
       dayProjs.forEach(proj=>{
-      const c=pcm[proj.colorId]||PC[7];
-      const ts=tasksOf(proj.id).filter(t=>dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson)));
-      const grp=document.createElement('div');grp.className='mw-group';
-      grp.innerHTML=`<div class="mw-ph"><div class="mw-pd" style="background:${c.tx}"></div>${proj.num} · ${proj.name}</div>`;
-      ts.forEach(task=>{
-        const rel=mwPerson?task.staff.filter(x=>x===mwPerson):task.staff;
-        const card=document.createElement('div');card.className='mw-card';
-        card.style.cssText=`background:${c.tx}28;border-left-color:${c.tx};border:1px solid ${c.tx}44`;
-        card.innerHTML=`<div class="mw-tm">${task.name}</div><div class="mw-chips">${rel.map(eid=>{const emp=empBy(eid);return emp?`<div class="mw-ec" style="background:${emp.color}22;color:${emp.color}">${eid}</div>`:''}).join('')}</div>`;
-        grp.appendChild(card);
+        const c=pcm[proj.colorId]||PC[7];
+        const ts=tasksOf(proj.id).filter(t=>dk>=t.startDate&&dk<=t.endDate&&(!mwPerson||t.staff.includes(mwPerson)));
+        const grp=document.createElement('div');grp.className='mw-group';
+        grp.innerHTML=`<div class="mw-ph"><div class="mw-pd" style="background:${c.tx}"></div>${proj.num} · ${proj.name}</div>`;
+        ts.forEach(task=>buildMwCard(task,c,grp));
+        body.appendChild(grp);
       });
-      body.appendChild(grp);
-    });
       if(dayInternal.length){
         const ci=PC[6];
         const grp=document.createElement('div');grp.className='mw-group';
         grp.innerHTML=`<div class="mw-ph"><div class="mw-pd" style="background:${ci.tx}"></div>🏢 Intern</div>`;
-        dayInternal.forEach(task=>{
-          const rel=mwPerson?task.staff.filter(x=>x===mwPerson):task.staff;
-          const card=document.createElement('div');card.className='mw-card';
-          card.style.cssText=`background:${ci.tx}28;border-left-color:${ci.tx};border:1px solid ${ci.tx}44`;
-          card.innerHTML=`<div class="mw-tm">${task.name}</div><div class="mw-chips">${rel.map(eid=>{const emp=empBy(eid);return emp?`<div class="mw-ec" style="background:${emp.color}22;color:${emp.color}">${eid}</div>`:''}).join('')}</div>`;
-          grp.appendChild(card);
-        });
+        dayInternal.forEach(task=>buildMwCard(task,ci,grp));
         body.appendChild(grp);
       }
     }
+
+    // "+ Tilføj opgave" button
+    const addBtn=document.createElement('button');
+    addBtn.className='mw-add-btn';
+    addBtn.textContent='+ Tilføj opgave';
+    addBtn.addEventListener('click',()=>openTaskM(null,mwPerson||null,dk));
+    body.appendChild(addBtn);
+
+    // Drop target for emp chips dragged from other cards
+    body.addEventListener('dragover',e=>{
+      if(e.dataTransfer.types.includes('mw-emp-drag'))e.preventDefault();
+    });
   }
+}
+
+function buildMwCard(task,c,parent){
+  const hasCf=taskHasConflict(task.id);
+  const card=document.createElement('div');
+  card.className='mw-card';
+  card.style.cssText=`background:${c.tx}28;border-left:2px solid ${hasCf?'var(--warn)':c.tx};border:1px solid ${c.tx}44`;
+  card.draggable=true;
+
+  // Task name
+  const nm=document.createElement('div');nm.className='mw-tm';nm.textContent=task.name+(hasCf?' ⚠':'');
+  card.appendChild(nm);
+
+  // Chips row
+  const chipsRow=document.createElement('div');chipsRow.className='mw-chips';
+  task.staff.forEach(eid=>{
+    const emp=empBy(eid);if(!emp)return;
+    const chip=document.createElement('div');
+    chip.className='mw-ec';
+    chip.style.cssText=`background:${emp.color}22;color:${emp.color}`;
+    chip.textContent=eid;
+    chip.draggable=true;
+    chip.title=`Træk for at flytte ${eid} til anden opgave, klik × for at fjerne`;
+    // Drag chip to another card
+    chip.addEventListener('dragstart',e=>{
+      e.stopPropagation();
+      e.dataTransfer.setData('mw-emp-drag',JSON.stringify({eid,fromTaskId:task.id}));
+      e.dataTransfer.effectAllowed='move';
+    });
+    // Click to remove
+    chip.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(!confirm(`Fjern ${eid} fra "${task.name}"?`))return;
+      task.staff=task.staff.filter(x=>x!==eid);
+      computeConflicts();render();saveState();showToast(`${eid} fjernet`);
+    });
+    chipsRow.appendChild(chip);
+  });
+
+  // Drop zone on card to receive dragged chips
+  card.addEventListener('dragover',e=>{
+    if(e.dataTransfer.types.includes('mw-emp-drag')){e.preventDefault();card.classList.add('drag-over');}
+  });
+  card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+  card.addEventListener('drop',e=>{
+    e.preventDefault();card.classList.remove('drag-over');
+    try{
+      const{eid,fromTaskId}=JSON.parse(e.dataTransfer.getData('mw-emp-drag'));
+      if(fromTaskId===task.id)return;
+      // Remove from source task
+      const src=taskBy(fromTaskId);
+      if(src)src.staff=src.staff.filter(x=>x!==eid);
+      // Add to this task if not already there
+      if(!task.staff.includes(eid))task.staff.push(eid);
+      computeConflicts();render();saveState();showToast(`${eid} flyttet til "${task.name}"`);
+    }catch(err){}
+  });
+
+  // Add chip button (+ medarbejder)
+  const addChip=document.createElement('div');
+  addChip.style.cssText=`height:16px;padding:0 5px;border-radius:3px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:1px dashed var(--b2);color:var(--t3);transition:all .12s`;
+  addChip.textContent='+';
+  addChip.title='Tilføj medarbejder';
+  addChip.addEventListener('click',e=>{
+    e.stopPropagation();
+    // Show a small emp picker
+    openMwEmpPicker(e,task);
+  });
+  chipsRow.appendChild(addChip);
+  card.appendChild(chipsRow);
+
+  // Click = open popup, dblclick = edit, right-click = ctx menu
+  card.addEventListener('click',e=>{
+    if(e.target===addChip||e.target.classList.contains('mw-ec'))return;
+    selectedTid=task.id;openPopup('task',task.id,e);
+  });
+  card.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id);});
+  card.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
+
+  parent.appendChild(card);
+}
+
+let mwEmpPickerCleanup=null;
+function openMwEmpPicker(e,task){
+  // Close any existing picker
+  if(mwEmpPickerCleanup)mwEmpPickerCleanup();
+  const picker=document.createElement('div');
+  picker.style.cssText=`position:fixed;left:${Math.min(e.clientX,window.innerWidth-180)}px;top:${Math.min(e.clientY+4,window.innerHeight-150)}px;background:var(--s3);border:1px solid var(--b2);border-radius:9px;padding:6px;z-index:700;box-shadow:0 8px 30px rgba(0,0,0,.5);display:flex;flex-wrap:wrap;gap:4px;max-width:200px`;
+  emps.filter(emp=>resourceKind(emp)!=='material'&&!task.staff.includes(emp.id)).forEach(emp=>{
+    const chip=document.createElement('div');
+    chip.style.cssText=`height:24px;padding:0 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;background:${emp.color}22;color:${emp.color}`;
+    chip.textContent=emp.id;
+    chip.addEventListener('click',()=>{
+      task.staff.push(emp.id);
+      computeConflicts();render();saveState();showToast(`${emp.id} tilføjet`);
+      document.body.removeChild(picker);
+      mwEmpPickerCleanup=null;
+    });
+    picker.appendChild(chip);
+  });
+  if(!picker.children.length){
+    picker.innerHTML=`<div style="font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;padding:2px 4px">Alle tilføjet</div>`;
+  }
+  document.body.appendChild(picker);
+  const close=ev=>{if(!picker.contains(ev.target)){document.body.removeChild(picker);document.removeEventListener('click',close);mwEmpPickerCleanup=null;}};
+  mwEmpPickerCleanup=()=>{if(picker.parentNode)document.body.removeChild(picker);document.removeEventListener('click',close);};
+  setTimeout(()=>document.addEventListener('click',close),10);
 }
 function setMWP(id){mwPerson=id;renderMyWeek()}
 
