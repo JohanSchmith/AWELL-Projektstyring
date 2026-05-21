@@ -938,6 +938,7 @@ let emps=[
 let projs=[],tasks=[],comments=[],vacations=[];
 let projSortMode='manual'; // 'manual'|'num'|'name'|'status'
 let showArchive=false;
+let internalOrder=9999; // Controls where 🏢 Intern appears in sidebar
 let projDragSrcId=null;
 let teams=[];
 // vacations: {id, empId, from, to, type:'ferie'|'fri'}
@@ -1326,7 +1327,75 @@ function renderSidebar(days,cfg){
   else if(projSortMode==='status'){const ord={active:0,hold:1,passive:2};visible=[...visible].sort((a,b)=>(ord[a.status]??3)-(ord[b.status]??3));}
   else visible=[...visible].sort((a,b)=>(a.order??0)-(b.order??0));
 
+  // Insert internal group at correct position
+  const internalTasks=tasks.filter(t=>!t.projId);
+  const renderInternalGroup=()=>{
+    if(!internalTasks.length)return;
+    const ci=PC[6];
+    const pr=document.createElement('div');
+    pr.className='sb-proj';
+    pr.dataset.pid='internal';
+    pr.style.borderLeft=`3px solid ${ci.tx}`;
+    pr.innerHTML=`${projSortMode==='manual'?'<div class="proj-drag-handle" title="Træk for at sortere"><span></span><span></span><span></span></div>':''}<div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div>`;
+    const handle=pr.querySelector('.proj-drag-handle');
+    if(handle){
+      handle.addEventListener('mousedown',e=>{
+        e.stopPropagation();
+        projDragSrcId='internal';
+        pr.classList.add('dragging-proj');
+        const onMove=mv=>{
+          document.querySelectorAll('.sb-proj').forEach(el=>{
+            el.classList.remove('drag-over-top','drag-over-bot');
+            const r=el.getBoundingClientRect(),mid=r.top+r.height/2;
+            if(el.dataset.pid&&el.dataset.pid!=='internal'){
+              if(mv.clientY>=r.top&&mv.clientY<mid)el.classList.add('drag-over-top');
+              else if(mv.clientY>=mid&&mv.clientY<=r.bottom)el.classList.add('drag-over-bot');
+            }
+          });
+        };
+        const onUp=()=>{
+          document.removeEventListener('mousemove',onMove);
+          document.removeEventListener('mouseup',onUp);
+          pr.classList.remove('dragging-proj');
+          const overTop=document.querySelector('.sb-proj.drag-over-top');
+          const overBot=document.querySelector('.sb-proj.drag-over-bot');
+          const targetEl=overTop||overBot;
+          document.querySelectorAll('.sb-proj').forEach(el=>el.classList.remove('drag-over-top','drag-over-bot'));
+          if(targetEl&&targetEl.dataset.pid!=='internal'){
+            const targetId=parseInt(targetEl.dataset.pid);
+            const tgt=projBy(targetId);
+            if(tgt){
+              const sorted=projs.filter(p=>p.status!=='archived').sort((a,b)=>(a.order??0)-(b.order??0));
+              const ti=sorted.findIndex(p=>p.id===tgt.id);
+              internalOrder=overBot?(sorted[ti]?.order??0)+0.5:(sorted[ti]?.order??0)-0.5;
+              saveState();renderSidebar(days,cfg);renderGantt(days,cfg);
+            }
+          }
+          projDragSrcId=null;
+        };
+        document.addEventListener('mousemove',onMove);
+        document.addEventListener('mouseup',onUp);
+      });
+    }
+    rows.appendChild(pr);
+    internalTasks.forEach(task=>{
+      const hasCf=ctids.has(task.id);
+      const tr=document.createElement('div');
+      tr.className='sb-task'+(selectedTid===task.id?' selected':'');
+      tr.innerHTML=`<div class="tdot" style="background:${ci.tx}"></div><div class="tname-sb">${task.name}</div>${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
+      tr.addEventListener('click',()=>scrollToAndOpen(task.id));
+      tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
+      rows.appendChild(tr);
+    });
+  };
+
+  let internalInserted=false;
   visible.forEach(proj=>{
+    // Insert intern group before this proj if internalOrder says so
+    if(!internalInserted&&(proj.order??0)>=internalOrder){
+      renderInternalGroup();
+      internalInserted=true;
+    }
     const c=pcm[proj.colorId]||PC[7];
     const ts=tasksOf(proj.id);
     const isOpen=!collapsed.has(proj.id);
@@ -1426,28 +1495,8 @@ function renderSidebar(days,cfg){
       });
     }
   });
-
-  // Internal tasks section
-  const internalTasks=tasks.filter(t=>!t.projId);
-  if(internalTasks.length){
-    const ci=PC[6];
-    const pr=document.createElement('div');
-    pr.className='sb-proj';
-    pr.style.borderLeft=`3px solid ${ci.tx}`;
-    pr.innerHTML=`<div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div>`;
-    rows.appendChild(pr);
-    internalTasks.forEach(task=>{
-      const hasCf=ctids.has(task.id);
-      const tr=document.createElement('div');
-      tr.className='sb-task'+(selectedTid===task.id?' selected':'');
-      tr.innerHTML=`<div class="tdot" style="background:${ci.tx}"></div>
-        <div class="tname-sb">${task.name}</div>
-        ${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
-      tr.addEventListener('click',()=>scrollToAndOpen(task.id));
-      tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
-      rows.appendChild(tr);
-    });
-  }
+  // Insert intern group at end if not yet inserted
+  if(!internalInserted)renderInternalGroup();
 
   // Archive section
   const archived=projs.filter(p=>p.status==='archived');
@@ -2919,11 +2968,17 @@ function saveTask(){
 
   // ── Konflikt-tjek ──
   const conflictingEmps=[];
+  const seen=new Set();
   tmStaff.forEach(eid=>{
-    const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==(editTid||null));
+    const empTasks=tasks.filter(t=>t.staff.includes(eid)&&t.id!==editTid);
     empTasks.forEach(t=>{
+      // Same logic as computeConflicts: strict overlap, shared boundary = NOT conflict
       if(s<t.endDate&&t.startDate<e){
-        conflictingEmps.push(`${eid} (overlap med "${t.name}")`);
+        const key=`${eid}|${t.id}`;
+        if(!seen.has(key)){
+          seen.add(key);
+          conflictingEmps.push(`${eid} — overlap med "${t.name}" (${fmtDate(t.startDate)} – ${fmtDate(t.endDate)})`);
+        }
       }
     });
   });
