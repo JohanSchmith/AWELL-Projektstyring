@@ -944,6 +944,7 @@ let projs=[],tasks=[],comments=[],vacations=[];
 let projSortMode='manual'; // 'manual'|'num'|'name'|'status'
 let showArchive=false;
 let internalOrder=9999; // Controls where 🏢 Intern appears in sidebar
+let internalColorId=PC[6].id; // Color for internal tasks group
 let projDragSrcId=null;
 let teams=[];
 // vacations: {id, empId, from, to, type:'ferie'|'fri'}
@@ -2135,8 +2136,9 @@ function renderGantt(days,cfg){
 
   // ── Interne opgaver (uden projekt) ──
   const internalTasks=tasks.filter(t=>!t.projId);
+  const isInternalOpen=!collapsed.has('internal');
   if(internalTasks.length){
-    const c=PC[6]; // neutral grey-blue color
+    const c=pcm[internalColorId]||PC[6];
     // Header row
     const prow=document.createElement('div');
     prow.className='g-proj-row';
@@ -2148,51 +2150,103 @@ function renderGantt(days,cfg){
     });
     const pbar=document.createElement('div');
     pbar.className='g-proj-bar';
-    pbar.style.cssText=`left:8px;right:8px;background:${c.tx}18;border:1.5px solid ${c.tx}55;color:${c.tx}`;
-    pbar.innerHTML=`<span style="font-size:11px;font-weight:700">🏢 Intern</span>`;
+    pbar.style.cssText=`left:8px;right:8px;background:${c.bar||c.tx+'33'};color:${c.tx}`;
+    // Color dot
+    const cdot=document.createElement('span');
+    cdot.style.cssText=`position:relative;z-index:5;width:10px;height:10px;border-radius:3px;background:${c.tx};cursor:pointer;flex-shrink:0;border:1px solid rgba(255,255,255,.3);transition:transform .15s;margin-right:6px`;
+    cdot.title='Skift farve';
+    cdot.addEventListener('mouseenter',()=>cdot.style.transform='scale(1.4)');
+    cdot.addEventListener('mouseleave',()=>cdot.style.transform='scale(1)');
+    cdot.addEventListener('click',e=>{
+      e.stopPropagation();
+      openColorPicker(e,'internal',null,nc=>{internalColorId=nc;render();showToast('Farve opdateret')});
+    });
+    pbar.appendChild(cdot);
+    const lbl=document.createElement('span');lbl.className='bar-lbl';lbl.textContent='🏢 Intern';pbar.appendChild(lbl);
     prow.appendChild(pbar);
+    if(todayIdx>=0){const tl=document.createElement('div');tl.className='today-line';tl.style.left=(todayIdx*dw+dw/2)+'px';prow.appendChild(tl);}
+    prow.addEventListener('contextmenu',e=>{e.preventDefault();});
     gantt.appendChild(prow);
 
-    internalTasks.forEach(task=>{
-      const trow=document.createElement('div');
-      trow.className='g-task-row'+(selectedTid===task.id?' selected-row':'');
-      trow.style.width=totalW+'px';
-      days.forEach(d=>{
-        const cell=document.createElement('div');
-        const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');
-        cell.style.width=dw+'px';trow.appendChild(cell);
-      });
-      const si=days.findIndex(d=>ky(d)===task.startDate);
-      const ei=days.findIndex(d=>ky(d)===task.endDate);
-      if(task.startDate>ky(days[days.length-1])||task.endDate<ky(days[0])){gantt.appendChild(trow);return;}
-      const startI=si===-1?0:si;
-      const endI=ei===-1?days.length-1:ei;
-      const bw=(endI-startI+1)*dw-4;
-      if(bw>0){
-        const bar=document.createElement('div');
-        bar.className='g-task-bar'+(selectedTid===task.id?' selected-bar':'');
-        bar.style.cssText=`left:${startI*dw+2}px;width:${bw}px;background:${c.tx}28;border-color:${c.tx};border-left:3px solid ${c.tx}`;
-        const lbl=document.createElement('span');lbl.className='g-task-lbl';
-        lbl.textContent=task.name;bar.appendChild(lbl);
-        // Staff chips
-        if(task.staff.length){
-          const chips=document.createElement('div');chips.className='bar-chips';
-          task.staff.forEach(eid=>{
-            const emp=empBy(eid);if(!emp)return;
-            const chip=document.createElement('div');chip.className='bar-chip';
-            chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
-            chip.textContent=eid;chips.appendChild(chip);
+    if(isInternalOpen){
+      internalTasks.forEach(task=>{
+        const hasCf=ctids.has(task.id);
+        const trow=document.createElement('div');
+        trow.className='g-task-row'+(selectedTid===task.id?' selected-row':'');
+        trow.style.width=totalW+'px';
+        days.forEach(d=>{
+          const cell=document.createElement('div');
+          const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');
+          cell.style.width=dw+'px';trow.appendChild(cell);
+        });
+        // Drop zone
+        const dz=document.createElement('div');dz.className='drop-zone';
+        dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dov')});
+        dz.addEventListener('dragleave',()=>dz.classList.remove('dov'));
+        dz.addEventListener('drop',e=>{
+          e.preventDefault();dz.classList.remove('dov');
+          if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();return;}
+          if(!dragEid)return;
+          if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
+          if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+          dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
+        });
+        trow.appendChild(dz);
+        const si=days.findIndex(d=>ky(d)===task.startDate);
+        const ei=days.findIndex(d=>ky(d)===task.endDate);
+        if(task.startDate>ky(days[days.length-1])||task.endDate<ky(days[0])){gantt.appendChild(trow);return;}
+        const startI=si===-1?0:si,endI=ei===-1?days.length-1:ei;
+        const bw=(endI-startI+1)*dw-4;
+        if(bw>0){
+          const bar=document.createElement('div');
+          bar.dataset.tid=task.id;
+          bar.className='g-task-bar'+(selectedTid===task.id?' selected-bar':'')+(hasCf?' conflict-bar-task':'');
+          bar.style.cssText=`left:${startI*dw+2}px;width:${bw}px;background:${c.tx}28;border-color:${hasCf?'var(--warn)':c.tx};border-left:3px solid ${hasCf?'var(--warn)':c.tx}`;
+          const rzL=document.createElement('div');rzL.className='rz rz-l';
+          rzL.addEventListener('mousedown',e=>{e.stopPropagation();startRz(e,task,'l',days,cfg)});bar.appendChild(rzL);
+          const nm=document.createElement('span');nm.className='bar-name';nm.style.color=c.tx;nm.textContent=task.name;bar.appendChild(nm);
+          if(task.staff.length&&dw>20){
+            const chips=document.createElement('div');chips.className='bar-chips';
+            task.staff.forEach(eid=>{
+              const emp=empBy(eid);if(!emp)return;
+              const isECf=hasCf&&conflicts[eid]&&conflicts[eid].some(cf=>cf.tids.includes(task.id));
+              const chip=document.createElement('div');
+              chip.className='bar-chip'+(isECf?' conflict-chip':'');
+              chip.draggable=true;
+              chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
+              chip.innerHTML=`${eid}<span class="cx" onclick="rmStaffFromBar(event,${task.id},'${eid}')">×</span>`;
+              chip.addEventListener('dragstart',e2=>{e2.stopPropagation();dragEid=eid;dragEids=null;dragSrcTid=task.id;e2.dataTransfer.effectAllowed='move';chip.style.opacity='.3';setTimeout(()=>chip.style.opacity='',0)});
+              chips.appendChild(chip);
+            });bar.appendChild(chips);
+          }
+          const rzR=document.createElement('div');rzR.className='rz rz-r';
+          rzR.addEventListener('mousedown',e=>{e.stopPropagation();startRz(e,task,'r',days,cfg)});bar.appendChild(rzR);
+          bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
+          bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
+          bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+          bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
+          bar.addEventListener('dragleave',()=>bar.style.outline='');
+          bar.addEventListener('drop',e=>{
+            e.preventDefault();bar.style.outline='';
+            if(dragEids&&dragEids.length){addStaffToTask(task,dragEids,dragSrcTid);dragEid=null;dragEids=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();return;}
+            if(!dragEid)return;
+            if(dragSrcTid&&dragSrcTid!==task.id){const st=taskBy(dragSrcTid);if(st)st.staff=st.staff.filter(x=>x!==dragEid)}
+            if(!task.staff.includes(dragEid)){task.staff.push(dragEid);showToast(`${dragEid} tilføjet`)}
+            dragEid=null;dragSrcTid=null;saveState();computeConflicts();renderGantt(days,cfg);renderSidebar(days,cfg);renderPalette();
           });
-          bar.appendChild(chips);
+          trow.appendChild(bar);
         }
-        bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
-        bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
-        bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
-        trow.appendChild(bar);
-      }
-      if(todayIdx>=0){const tl=document.createElement('div');tl.className='today-line';tl.style.left=(todayIdx*dw+dw/2)+'px';trow.appendChild(tl);}
-      gantt.appendChild(trow);
-    });
+        // Vacation overlays
+        task.staff.forEach(eid=>{
+          days.forEach((d,i)=>{
+            const vac=isVacDay(eid,ky(d));
+            if(vac&&!isWk(d)){const el=vacOverlayEl(vac,i*dw,dw,eid);el.style.zIndex='6';trow.appendChild(el);}
+          });
+        });
+        if(todayIdx>=0){const tl=document.createElement('div');tl.className='today-line';tl.style.left=(todayIdx*dw+dw/2)+'px';trow.appendChild(tl);}
+        gantt.appendChild(trow);
+      });
+    }
   }
 
 
@@ -2875,7 +2929,7 @@ function openColorPicker(e,type,id,cb){
     PC.forEach(pc=>{
       const sw=document.createElement('div');sw.className='cpsw';
       sw.style.cssText=`background:${pc.bg};border-color:${pc.tx}`;
-      const cur=type==='proj'?projBy(id)?.colorId:null;
+      const cur=type==='proj'?projBy(id)?.colorId:type==='internal'?internalColorId:null;
       if(cur===pc.id)sw.classList.add('on');
       sw.addEventListener('click',ev=>{ev.stopPropagation();cb(pc.id);pop.classList.remove('open')});
       pop.appendChild(sw);
@@ -3687,6 +3741,7 @@ function statePayload(){
   return {
     emps,projs,tasks,comments,vacations,teams,specialDays,
     collapsed:[...collapsed],
+    internalOrder,internalColorId,
     pseq,tseq,cseq,vacSeq,teamSeq
   };
 }
@@ -3701,6 +3756,8 @@ function applyPayload(d){
   if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
   if(d.specialDays){specialDays=d.specialDays}
   if(d.collapsed){collapsed=new Set(d.collapsed)}
+  if(d.internalOrder!==undefined){internalOrder=d.internalOrder}
+  if(d.internalColorId){internalColorId=d.internalColorId}
 }
 
 // ── DANISH HOLIDAYS ───────────────────────────────────────
