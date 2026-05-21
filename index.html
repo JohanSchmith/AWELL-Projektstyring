@@ -2048,7 +2048,70 @@ function renderGantt(days,cfg){
       });
     }
   });
-  const wrap=document.getElementById('gantt-wrap');
+
+  // ── Interne opgaver (uden projekt) ──
+  const internalTasks=tasks.filter(t=>!t.projId);
+  if(internalTasks.length){
+    const c=PC[6]; // neutral grey-blue color
+    // Header row
+    const prow=document.createElement('div');
+    prow.className='g-proj-row';
+    prow.style.width=totalW+'px';
+    days.forEach(d=>{
+      const cell=document.createElement('div');
+      const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');
+      cell.style.width=dw+'px';prow.appendChild(cell);
+    });
+    const pbar=document.createElement('div');
+    pbar.className='g-proj-bar';
+    pbar.style.cssText=`left:8px;right:8px;background:${c.tx}18;border:1.5px solid ${c.tx}55;color:${c.tx}`;
+    pbar.innerHTML=`<span style="font-size:11px;font-weight:700">🏢 Intern</span>`;
+    prow.appendChild(pbar);
+    gantt.appendChild(prow);
+
+    internalTasks.forEach(task=>{
+      const trow=document.createElement('div');
+      trow.className='g-task-row'+(selectedTid===task.id?' selected-row':'');
+      trow.style.width=totalW+'px';
+      days.forEach(d=>{
+        const cell=document.createElement('div');
+        const _hol=isHoliday(ky(d));cell.className='g-cell'+(isWk(d)?' wk':'')+(ky(d)===today?' td':'')+(_hol?(_hol.type==='holiday'?' holiday':' special'):'');
+        cell.style.width=dw+'px';trow.appendChild(cell);
+      });
+      const si=days.findIndex(d=>ky(d)===task.startDate);
+      const ei=days.findIndex(d=>ky(d)===task.endDate);
+      if(task.startDate>ky(days[days.length-1])||task.endDate<ky(days[0])){gantt.appendChild(trow);return;}
+      const startI=si===-1?0:si;
+      const endI=ei===-1?days.length-1:ei;
+      const bw=(endI-startI+1)*dw-4;
+      if(bw>0){
+        const bar=document.createElement('div');
+        bar.className='g-task-bar'+(selectedTid===task.id?' selected-bar':'');
+        bar.style.cssText=`left:${startI*dw+2}px;width:${bw}px;background:${c.tx}28;border-color:${c.tx};border-left:3px solid ${c.tx}`;
+        const lbl=document.createElement('span');lbl.className='g-task-lbl';
+        lbl.textContent=task.name;bar.appendChild(lbl);
+        // Staff chips
+        if(task.staff.length){
+          const chips=document.createElement('div');chips.className='bar-chips';
+          task.staff.forEach(eid=>{
+            const emp=empBy(eid);if(!emp)return;
+            const chip=document.createElement('div');chip.className='bar-chip';
+            chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
+            chip.textContent=eid;chips.appendChild(chip);
+          });
+          bar.appendChild(chips);
+        }
+        bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
+        bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
+        bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+        trow.appendChild(bar);
+      }
+      if(todayIdx>=0){const tl=document.createElement('div');tl.className='today-line';tl.style.left=(todayIdx*dw+dw/2)+'px';trow.appendChild(tl);}
+      gantt.appendChild(trow);
+    });
+  }
+
+
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
   // Bidirectional scroll sync
@@ -2805,7 +2868,7 @@ function openTaskM(preselPid,preselEmpId,preselDate){
   document.getElementById('tm-s').value=date;
   document.getElementById('tm-e').value=preselDate||ky(addWD(new Date(),4));
   const sel=document.getElementById('tm-proj');
-  sel.innerHTML=projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===preselPid?'selected':''}>${p.num} – ${p.name}</option>`).join('');
+  sel.innerHTML=`<option value="">— Intern / ingen projekt —</option>`+projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===preselPid?'selected':''}>${p.num} – ${p.name}</option>`).join('');
   renderTmStaffChips();
   document.getElementById('mbg-task').classList.add('on');
   setTimeout(()=>document.getElementById('tm-name').focus(),50);
@@ -2819,14 +2882,15 @@ function openTaskEdit(id){
   document.getElementById('tm-s').value=t.startDate;
   document.getElementById('tm-e').value=t.endDate;
   const sel=document.getElementById('tm-proj');
-  sel.innerHTML=projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');
+  sel.innerHTML=`<option value="" ${!t.projId?'selected':''}>— Intern / ingen projekt —</option>`+projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');
   renderTmStaffChips();
   document.getElementById('mbg-task').classList.add('on');
 }
 function closeTaskM(){document.getElementById('mbg-task').classList.remove('on')}
 function saveTask(){
   const name=document.getElementById('tm-name').value.trim();
-  const pid=parseInt(document.getElementById('tm-proj').value);
+  const pidRaw=document.getElementById('tm-proj').value;
+  const pid=pidRaw?parseInt(pidRaw):null;
   const s=document.getElementById('tm-s').value;
   const e=document.getElementById('tm-e').value;
   if(!name||!s||!e)return;
