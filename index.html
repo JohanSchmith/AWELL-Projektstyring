@@ -128,7 +128,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 /* ── GANTT ── */
 /* ── SCROLLBARS ── */
 .timeline-pane{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
-.gantt-wrap{flex:1;min-height:0;overflow:auto;position:relative;cursor:grab}
+.gantt-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;position:relative;cursor:grab}
 .gantt-wrap.dragging{cursor:grabbing;user-select:none}
 .gantt-wrap{scrollbar-color:transparent transparent;scrollbar-width:none}
 .gantt-wrap::-webkit-scrollbar{display:none}
@@ -736,7 +736,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 </div>
 
 <!-- CONFLICT WARNING MODAL -->
-<div class="mbg" id="mbg-conflict">
+<div class="mbg" id="mbg-conflict" style="z-index:800">
   <div class="modal" style="width:460px;border:1px solid var(--warn);box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,159,67,.2)">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <div id="conflict-icon" style="font-size:22px;animation:conflictPulse 1s ease-in-out infinite">⚠</div>
@@ -1240,7 +1240,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
     isDragging=true;didDrag=false;
     panDx=0;panDy=0;
     dragStartX=e.clientX;dragStartY=e.clientY;
-    dragStartScroll=wrap.scrollLeft;dragStartTop=wrap.scrollTop;
+    dragStartScroll=wrap.scrollLeft;
+    const _sbForDrag=document.getElementById('sb-rows');
+    dragStartTop=_sbForDrag?_sbForDrag.scrollTop:wrap.scrollTop;
     visualPanEl=wrap.querySelector('.gantt');
     isVisualPanning=false;
     if(visualPanEl)visualPanEl.style.transition='none';
@@ -1261,7 +1263,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
         isVisualPanning=true;
         visualPanEl.style.transform=`translateX(${dx}px)`;
       }else{
-        wrap.scrollTop=dragStartTop-dy;
+        // Vertical pan: scroll sidebar, gantt follows via transform
+        const sbEl=document.getElementById('sb-rows');
+        if(sbEl){sbEl.scrollTop=dragStartTop-dy;}
       }
       updateThumb();
       e.preventDefault();
@@ -2339,20 +2343,19 @@ function renderGantt(days,cfg){
 
   const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
-  const prevScrollTop=wrap.scrollTop;
+  const prevScrollTop=sb.scrollTop;
   sb.style.paddingBottom='';
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
   if(wrap._vScrollHandler)wrap.removeEventListener('scroll',wrap._vScrollHandler);
   if(sb._vScrollHandler)sb.removeEventListener('scroll',sb._vScrollHandler);
-  let _syncLock=false;
-  // Scroll sync: gantt-wrap contains a sticky header, so scrollTop=0 means header is visible
-  // sb-rows has no header, so we sync directly — they both scroll by the same row heights
-  wrap._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;sb.scrollTop=wrap.scrollTop;_syncLock=false;};
-  sb._vScrollHandler=()=>{if(_syncLock)return;_syncLock=true;wrap.scrollTop=sb.scrollTop;_syncLock=false;};
-  wrap.addEventListener('scroll',wrap._vScrollHandler,{passive:true});
+  // Vertical scroll: sidebar drives, gantt content translates to match
+  sb._vScrollHandler=()=>{
+    gantt.style.transform=`translateY(${-sb.scrollTop}px)`;
+  };
   sb.addEventListener('scroll',sb._vScrollHandler,{passive:true});
   if(cfg.panBuffer)wrap.scrollLeft=cfg.panBuffer*cfg.dw;
-  if(prevScrollTop>0){wrap.scrollTop=prevScrollTop;sb.scrollTop=prevScrollTop;}
+  // Restore scroll
+  if(prevScrollTop>0){sb.scrollTop=prevScrollTop;gantt.style.transform=`translateY(${-prevScrollTop}px)`;}
   requestAnimationFrame(()=>{
     const ghead=gantt.querySelector('.g-head');
     const sbHead=document.querySelector('.sb-head');
@@ -2360,12 +2363,12 @@ function renderGantt(days,cfg){
       const h=ghead.offsetHeight;
       sbHead.style.height=h+'px';
       sbHead.style.minHeight=h+'px';
-      // Add bottom padding to sb-rows so it can scroll as far down as gantt-wrap
-      const ganttScrollable=wrap.scrollHeight-wrap.clientHeight;
-      const sbScrollable=sb.scrollHeight-sb.clientHeight;
-      if(ganttScrollable>sbScrollable){
-        sb.style.paddingBottom=(ganttScrollable-sbScrollable)+'px';
-      }
+    }
+    // Make sb-rows scrollable to match gantt content height minus wrap height
+    const ganttContentH=gantt.scrollHeight;
+    const wrapH=wrap.clientHeight;
+    if(ganttContentH>wrapH){
+      sb.style.paddingBottom=Math.max(0,ganttContentH-wrapH-(sb.scrollHeight-sb.clientHeight))+'px';
     }
   });
 }
