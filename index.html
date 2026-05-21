@@ -1337,11 +1337,17 @@ function renderSidebar(days,cfg){
   const renderInternalGroup=()=>{
     if(!internalTasks.length)return;
     const ci=PC[6];
+    const isOpen=!collapsed.has('internal');
     const pr=document.createElement('div');
     pr.className='sb-proj';
     pr.dataset.pid='internal';
     pr.style.borderLeft=`3px solid ${ci.tx}`;
-    pr.innerHTML=`${projSortMode==='manual'?'<div class="proj-drag-handle" title="Træk for at sortere"><span></span><span></span><span></span></div>':''}<div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div>`;
+    pr.innerHTML=`${projSortMode==='manual'?'<div class="proj-drag-handle" title="Træk for at sortere"><span></span><span></span><span></span></div>':''}<div class="caret ${isOpen?'open':''}">&#x25B6;</div><div class="pdot" style="background:${ci.tx}"></div><div class="plbl"><div class="pname">🏢 Intern</div></div><div class="pbadge">${internalTasks.length}</div>`;
+    pr.addEventListener('click',e=>{
+      if(e.target.closest('.proj-drag-handle'))return;
+      if(collapsed.has('internal'))collapsed.delete('internal');else collapsed.add('internal');
+      renderSidebar(days,cfg);renderGantt(days,cfg);
+    });
     const handle=pr.querySelector('.proj-drag-handle');
     if(handle){
       handle.addEventListener('mousedown',e=>{
@@ -1383,15 +1389,17 @@ function renderSidebar(days,cfg){
       });
     }
     rows.appendChild(pr);
-    internalTasks.forEach(task=>{
-      const hasCf=ctids.has(task.id);
-      const tr=document.createElement('div');
-      tr.className='sb-task'+(selectedTid===task.id?' selected':'');
-      tr.innerHTML=`<div class="tdot" style="background:${ci.tx}"></div><div class="tname-sb">${task.name}</div>${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
-      tr.addEventListener('click',()=>scrollToAndOpen(task.id));
-      tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
-      rows.appendChild(tr);
-    });
+    if(isOpen){
+      internalTasks.forEach(task=>{
+        const hasCf=ctids.has(task.id);
+        const tr=document.createElement('div');
+        tr.className='sb-task'+(selectedTid===task.id?' selected':'');
+        tr.innerHTML=`<div class="tdot" style="background:${ci.tx}"></div><div class="tname-sb">${task.name}</div>${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
+        tr.addEventListener('click',()=>scrollToAndOpen(task.id));
+        tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
+        rows.appendChild(tr);
+      });
+    }
   };
 
   let internalInserted=false;
@@ -2188,6 +2196,7 @@ function renderGantt(days,cfg){
   }
 
 
+  const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
   syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
   // Bidirectional scroll sync
