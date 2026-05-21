@@ -1181,7 +1181,7 @@ function setView(v){
 }
 
 // ── RENDER ────────────────────────────────────────────────
-function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
+function syncHorizontalScroll(wrapId,proxyId,innerId,totalW,vScrollId){\n  // vScrollId: element that handles vertical scroll (defaults to wrap itself if not provided)
   const wrap=document.getElementById(wrapId);
   if(!wrap)return;
   if(wrap._syncHorizontalCleanup)wrap._syncHorizontalCleanup();
@@ -1234,7 +1234,7 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
   // Drag-to-scroll on the gantt canvas itself
   let dragStartX=0,dragStartY=0,dragStartScroll=0,dragStartTop=0,isDragging=false,didDrag=false;
   let panDx=0,panDy=0,visualPanEl=null,isVisualPanning=false;
-  const blockPanSelector='.rz,.flip-rz,.bar-chip,.pal-chip,.drag-handle,.flip-bar-cmtbadge,input,textarea,select,button,a,[contenteditable="true"]';
+  const blockPanSelector='.rz,.flip-rz,.bar-chip,.pal-chip,.drag-handle,.flip-bar-cmtbadge,.g-task-bar,.g-proj-bar,.flip-task-bar,input,textarea,select,button,a,[contenteditable="true"]';
   const onPanStart=e=>{
     if(e.button!==0)return;
     if(e.defaultPrevented||e.target.closest(blockPanSelector))return;
@@ -1242,8 +1242,8 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
     panDx=0;panDy=0;
     dragStartX=e.clientX;dragStartY=e.clientY;
     dragStartScroll=wrap.scrollLeft;
-    const _sbForDrag=document.getElementById('sb-rows');
-    dragStartTop=_sbForDrag?_sbForDrag.scrollTop:wrap.scrollTop;
+    const vScrollEl=vScrollId?document.getElementById(vScrollId):wrap;
+    dragStartTop=vScrollEl?vScrollEl.scrollTop:0;
     visualPanEl=wrap.querySelector('.gantt');
     isVisualPanning=false;
     if(visualPanEl)visualPanEl.style.transition='none';
@@ -1264,9 +1264,9 @@ function syncHorizontalScroll(wrapId,proxyId,innerId,totalW){
         isVisualPanning=true;
         visualPanEl.style.transform=`translateX(${dx}px)`;
       }
-      // Always pan vertically via sidebar
-      const sbEl=document.getElementById('sb-rows');
-      if(sbEl)sbEl.scrollTop=dragStartTop-dy;
+      // Always pan vertically via the designated vertical scroll element
+      const vScrollEl=vScrollId?document.getElementById(vScrollId):wrap;
+      if(vScrollEl)vScrollEl.scrollTop=dragStartTop-dy;
       updateThumb();
       e.preventDefault();
     }
@@ -2378,7 +2378,7 @@ function renderGantt(days,cfg){
   const sb=document.getElementById('sb-rows');
   const prevScrollTop=sb.scrollTop;
   sb.style.paddingBottom='';
-  syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW);
+  syncHorizontalScroll('gantt-wrap','gantt-x-scroll','gantt-x-scroll-inner',totalW,'sb-rows');
   if(wrap._vScrollHandler)wrap.removeEventListener('scroll',wrap._vScrollHandler);
   if(sb._vScrollHandler)sb.removeEventListener('scroll',sb._vScrollHandler);
   // Forward mouse wheel vertical scroll on gantt-wrap to sidebar
@@ -2731,7 +2731,7 @@ function renderFlipGantt(days,cfg){
   // Sync sidebar scroll
   const wrap=document.getElementById('flip-gantt-wrap');
   const sb=document.getElementById('flip-sb-rows');
-  syncHorizontalScroll('flip-gantt-wrap','flip-x-scroll','flip-x-scroll-inner',totalW);
+  syncHorizontalScroll('flip-gantt-wrap','flip-x-scroll','flip-x-scroll-inner',totalW,'flip-gantt-wrap');
   let _flipLock=false;
   wrap.onscroll=()=>{if(_flipLock)return;_flipLock=true;sb.scrollTop=wrap.scrollTop;_flipLock=false};
   sb.onscroll=()=>{if(_flipLock)return;_flipLock=true;wrap.scrollTop=sb.scrollTop;_flipLock=false};
