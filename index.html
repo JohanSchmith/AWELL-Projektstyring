@@ -2756,6 +2756,8 @@ function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class
 function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div class="sw ${selEC===c?'on':''}" style="background:${c}33;border-color:${c}" data-c="${c}" onclick="selEC='${c}';document.querySelectorAll('#em-cr .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==='${c}'))"></div>`).join('')}
 
 // ── FERIE & FRI OVERSIGT ──────────────────────────────────
+let vacViewEmpDragIdx=null;
+
 function renderVacView(days,cfg){
   const sb=document.getElementById('vac-sb-rows');
   const gantt=document.getElementById('vac-gantt');
@@ -2764,10 +2766,10 @@ function renderVacView(days,cfg){
   const dw=cfg.dw;
   const totalW=days.length*dw;
 
-  // Header row with dates
+  // ── Header ──
   const head=document.createElement('div');
-  head.style.cssText=`display:flex;position:sticky;top:0;z-index:20;background:var(--s1);border-bottom:1px solid var(--b1);min-width:${totalW}px`;
-  // Month row
+  head.style.cssText=`display:flex;flex-direction:column;position:sticky;top:0;z-index:20;background:var(--s1);border-bottom:1px solid var(--b1);min-width:${totalW}px`;
+
   const monthRow=document.createElement('div');
   monthRow.style.cssText='display:flex;height:18px;border-bottom:1px solid var(--b1);';
   let curMonth=-1,monthStart=0;
@@ -2776,26 +2778,21 @@ function renderVacView(days,cfg){
       if(curMonth>=0){
         const mc=document.createElement('div');
         mc.style.cssText=`width:${(i-monthStart)*dw}px;flex-shrink:0;padding:0 6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);border-right:1px solid var(--b1);display:flex;align-items:center;text-transform:uppercase;letter-spacing:.06em;overflow:hidden;white-space:nowrap`;
-        mc.textContent=`${DKMs[curMonth]}`;
-        monthRow.appendChild(mc);
+        mc.textContent=DKMs[curMonth];monthRow.appendChild(mc);
       }
       curMonth=d.getMonth();monthStart=i;
     }
   });
-  // last month cell
   const mc=document.createElement('div');
-  mc.style.cssText=`flex:1;padding:0 6px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);display:flex;align-items:center;text-transform:uppercase;letter-spacing:.06em;overflow:hidden;white-space:nowrap`;
-  mc.textContent=`${DKMs[curMonth]}`;
-  monthRow.appendChild(mc);
+  mc.style.cssText='flex:1;padding:0 6px;font-size:9px;font-family:DM Mono,monospace;color:var(--t3);display:flex;align-items:center;text-transform:uppercase;letter-spacing:.06em;overflow:hidden;white-space:nowrap';
+  mc.textContent=DKMs[curMonth];monthRow.appendChild(mc);
   head.appendChild(monthRow);
 
-  // Day row
   const dayRow=document.createElement('div');
   dayRow.style.cssText='display:flex;height:38px;';
   const today=ky(new Date());
   days.forEach(d=>{
-    const isWknd=isWk(d);
-    const isTd=ky(d)===today;
+    const isWknd=isWk(d),isTd=ky(d)===today;
     const cell=document.createElement('div');
     cell.style.cssText=`width:${dw}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:5px;gap:1px;border-right:1px solid var(--b1);${isWknd?'background:var(--s2)':''}${isTd?';background:rgba(91,143,255,.08)':''}`;
     const dn=document.createElement('div');
@@ -2810,34 +2807,85 @@ function renderVacView(days,cfg){
   head.appendChild(dayRow);
   gantt.appendChild(head);
 
-  // Filter: only employees with at least one vacation in visible range
+  // ── Filter emps with vacation in range ──
   const rangeStart=ky(days[0]),rangeEnd=ky(days[days.length-1]);
-  const empsWithVac=emps.filter(emp=>
-    vacations.some(v=>v.empId===emp.id&&v.to>=rangeStart&&v.from<=rangeEnd)
-  );
+  const empsWithVac=emps.filter(emp=>vacations.some(v=>v.empId===emp.id&&v.to>=rangeStart&&v.from<=rangeEnd));
+  const displayEmps=empsWithVac.length?empsWithVac:emps;
 
-  if(!empsWithVac.length){
-    // Show all employees if no one has vacation, with empty rows
+  if(!vacations.length){
     const noVac=document.createElement('div');
     noVac.style.cssText='padding:20px;font-size:12px;font-family:DM Mono,monospace;color:var(--t3)';
-    noVac.textContent='Ingen ferie eller fridage i denne periode';
+    noVac.textContent='Ingen ferie eller fridage registreret — højreklik på tidslinjen for at tilføje';
     gantt.appendChild(noVac);
-    return;
   }
 
-  empsWithVac.forEach(emp=>{
-    // Sidebar row
+  displayEmps.forEach((emp,idx)=>{
+    // ── Sidebar chip row ──
     const sbRow=document.createElement('div');
-    sbRow.className='vac-sb-row';
-    sbRow.innerHTML=`<div class="vac-emp-dot" style="background:${emp.color}"></div>${emp.id}`;
+    sbRow.className='flip-emp-row';
+    sbRow.style.borderLeft=`3px solid ${emp.color}`;
+    sbRow.draggable=true;
+    sbRow.dataset.idx=String(emps.indexOf(emp));
+
+    const handle=document.createElement('div');
+    handle.className='drag-handle';
+    handle.innerHTML='<span></span><span></span><span></span>';
+    sbRow.appendChild(handle);
+
+    const avatar=document.createElement('div');
+    avatar.className='emp-avatar';
+    avatar.style.cssText=`background:${emp.color}22;color:${emp.color}`;
+    avatar.textContent=emp.id.slice(0,4);
+    sbRow.appendChild(avatar);
+
+    const name=document.createElement('div');
+    name.className='flip-emp-name';
+    name.textContent=emp.id;
+    sbRow.appendChild(name);
+
+    // Drag events for reorder
+    const globalIdx=emps.indexOf(emp);
+    sbRow.addEventListener('dragstart',e=>{
+      vacViewEmpDragIdx=globalIdx;
+      sbRow.classList.add('dragging-emp');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',globalIdx);
+    });
+    sbRow.addEventListener('dragend',()=>{
+      sbRow.classList.remove('dragging-emp');
+      document.querySelectorAll('.flip-emp-row').forEach(r=>r.classList.remove('drag-over-top','drag-over-bot'));
+      vacViewEmpDragIdx=null;
+    });
+    sbRow.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(vacViewEmpDragIdx===null||vacViewEmpDragIdx===globalIdx)return;
+      const rect=sbRow.getBoundingClientRect(),mid=rect.top+rect.height/2;
+      document.querySelectorAll('#vac-sb-rows .flip-emp-row').forEach(r=>r.classList.remove('drag-over-top','drag-over-bot'));
+      sbRow.classList.add(e.clientY<mid?'drag-over-top':'drag-over-bot');
+    });
+    sbRow.addEventListener('dragleave',()=>sbRow.classList.remove('drag-over-top','drag-over-bot'));
+    sbRow.addEventListener('drop',e=>{
+      e.preventDefault();
+      sbRow.classList.remove('drag-over-top','drag-over-bot');
+      if(vacViewEmpDragIdx===null||vacViewEmpDragIdx===globalIdx)return;
+      const rect=sbRow.getBoundingClientRect(),mid=rect.top+rect.height/2;
+      const insertAfter=e.clientY>=mid;
+      const moved=emps.splice(vacViewEmpDragIdx,1)[0];
+      let newIdx=globalIdx;
+      if(vacViewEmpDragIdx<globalIdx)newIdx=globalIdx-1;
+      if(insertAfter)newIdx++;
+      emps.splice(newIdx,0,moved);
+      vacViewEmpDragIdx=null;
+      render();saveState();
+    });
     sb.appendChild(sbRow);
 
-    // Gantt row
+    // ── Gantt row ──
     const row=document.createElement('div');
     row.className='vac-g-row';
     row.style.minWidth=totalW+'px';
 
-    // Weekend shading + today
+    // Weekend + today shading
     days.forEach((d,i)=>{
       if(isWk(d)||ky(d)===today){
         const shade=document.createElement('div');
@@ -2846,17 +2894,13 @@ function renderVacView(days,cfg){
       }
     });
 
-    // Vacation blocks — merge consecutive days of same vacation period
+    // Vacation blocks
     const empVacs=vacations.filter(v=>v.empId===emp.id&&v.to>=rangeStart&&v.from<=rangeEnd);
     empVacs.forEach(vac=>{
-      // Find start and end index in days array
       let startIdx=-1,endIdx=-1;
       days.forEach((d,i)=>{
         const dk=ky(d);
-        if(dk>=vac.from&&dk<=vac.to){
-          if(startIdx===-1)startIdx=i;
-          endIdx=i;
-        }
+        if(dk>=vac.from&&dk<=vac.to){if(startIdx===-1)startIdx=i;endIdx=i;}
       });
       if(startIdx===-1)return;
       const blockW=(endIdx-startIdx+1)*dw;
@@ -2864,17 +2908,45 @@ function renderVacView(days,cfg){
       block.className='vac-block '+vac.type;
       block.style.cssText=`left:${startIdx*dw+2}px;width:${blockW-4}px`;
       block.textContent=vac.type==='ferie'?'🏖 Ferie':'🌤 Fri';
-      block.title=`${emp.id}: ${vac.type==='ferie'?'Ferie':'Fri'} ${fmtDate(vac.from)} – ${fmtDate(vac.to)}`;
+      block.title=`${emp.id}: ${vac.type==='ferie'?'Ferie':'Fri'} ${fmtDate(vac.from)} – ${fmtDate(vac.to)}\nHøjreklik for at slette`;
+      // Right-click on block to delete
+      block.addEventListener('contextmenu',e=>{
+        e.preventDefault();e.stopPropagation();
+        if(confirm(`Slet ${vac.type==='ferie'?'ferie':'fridag'} for ${emp.id}\n${fmtDate(vac.from)} – ${fmtDate(vac.to)}?`)){
+          vacations=vacations.filter(v=>v.id!==vac.id);
+          saveState();render();showToast(`Slettet`);
+        }
+      });
       row.appendChild(block);
+    });
+
+    // Right-click on empty row area to create vacation
+    row.addEventListener('contextmenu',e=>{
+      if(e.target.classList.contains('vac-block'))return;
+      e.preventDefault();
+      const rect=row.getBoundingClientRect();
+      const clickX=e.clientX-rect.left+document.getElementById('vac-gantt-wrap').scrollLeft;
+      const dayIdx=Math.floor(clickX/dw);
+      if(dayIdx<0||dayIdx>=days.length)return;
+      const clickedDate=ky(days[dayIdx]);
+      openVacM();
+      // Override defaults set by openVacM
+      document.getElementById('vac-emp').value=emp.id;
+      document.getElementById('vac-from').value=clickedDate;
+      document.getElementById('vac-to').value=clickedDate;
     });
 
     gantt.appendChild(row);
   });
 
-  // Sync scroll between sidebar and gantt
+  // ── Drag-to-pan ──
+  syncHorizontalScroll('vac-gantt-wrap',null,null,totalW);
+
+  // Sync vertical scroll between sidebar and gantt
   const wrap=document.getElementById('vac-gantt-wrap');
   wrap.onscroll=()=>{sb.scrollTop=wrap.scrollTop};
 }
+
 
 // ── MIN UGE ───────────────────────────────────────────────
 function renderMyWeek(){
