@@ -123,7 +123,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .tname-sb{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .conflict-dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex-shrink:0;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.comment-badge{width:14px;height:14px;border-radius:50%;background:var(--acc);color:#fff;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.comment-badge{position:relative;min-width:16px;height:16px;border-radius:8px;background:var(--acc);color:#fff;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 4px}
+.comment-badge::after{content:'';position:absolute;bottom:-4px;left:4px;width:0;height:0;border-left:4px solid transparent;border-right:0px solid transparent;border-top:4px solid var(--acc)}
 
 /* ── GANTT ── */
 /* ── SCROLLBARS ── */
@@ -421,7 +422,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .flip-task-bar.conflict-bar-task{box-shadow:0 0 0 2px var(--warn)}
 .flip-bar-proj{font-size:9px;font-family:'DM Mono',monospace;opacity:.7;flex-shrink:0}
 .flip-bar-name{font-size:10px;font-weight:700;color:inherit;overflow:hidden;text-overflow:ellipsis;flex:1}
-.flip-bar-cmtbadge{width:14px;height:14px;border-radius:50%;background:var(--acc);color:#fff;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;pointer-events:all}
+.flip-bar-cmtbadge{position:relative;min-width:16px;height:16px;border-radius:8px;background:var(--acc);color:#fff;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;pointer-events:all;padding:0 4px}
+.flip-bar-cmtbadge::after{content:'';position:absolute;bottom:-4px;left:4px;width:0;height:0;border-left:4px solid transparent;border-right:0px solid transparent;border-top:4px solid var(--acc)}
 .flip-bar-cmtbadge:hover{filter:brightness(1.2)}
 /* Resize handles */
 .flip-rz{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:6;opacity:0;transition:opacity .15s}
@@ -867,6 +869,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <h3>Medarbejder og materiel</h3>
     <div class="fg"><label>Initialer / navn / materiel</label><input id="em-n" placeholder="TFU" maxlength="20"></div>
     <div class="fg"><label>Farve</label><div class="cr" id="em-cr"></div></div>
+    <div class="fg" id="em-email-wrap"><label>Login-email <span style="font-size:10px;color:var(--t3);font-weight:400">(valgfri — til kommentarer)</span></label><input id="em-email" type="email" placeholder="tfu@firma.dk" style="font-family:'DM Mono',monospace"></div>
     <div class="m-acts">
       <button class="btn btn-g" onclick="closeEmpM()">Annuller</button>
       <button class="btn btn-p" onclick="saveEmp()">Tilføj</button>
@@ -1548,7 +1551,7 @@ function renderSidebar(days,cfg){
         tr.className='sb-task'+(selectedTid===task.id?' selected':'');
         tr.innerHTML=`<div class="tdot" style="background:${c.tx}"></div>
           <div class="tname-sb">${task.name}</div>
-          ${tcnt?`<div class="comment-badge">${tcnt}`:``}
+          ${tcnt?`<div class="comment-badge">${tcnt}</div>`:``}
           ${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
         tr.addEventListener('click',()=>scrollToAndOpen(task.id));
         tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
@@ -2235,6 +2238,8 @@ function renderGantt(days,cfg){
           }
           const rzR=document.createElement('div');rzR.className='rz rz-r';
           rzR.addEventListener('mousedown',e=>{e.stopPropagation();startRz(e,task,'r',days,cfg)});bar.appendChild(rzR);
+          const tcnt=commentCount('task',task.id);
+          if(tcnt){const cb=document.createElement('div');cb.className='comment-badge';cb.textContent=tcnt;cb.title=`${tcnt} kommentar${tcnt!==1?'er':''}`;cb.style.marginRight='2px';bar.appendChild(cb);}
           bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
@@ -3025,15 +3030,27 @@ function renderPopBody(){
     });
     cDiv.appendChild(list);
     const compose=document.createElement('div');compose.className='pop-compose';
-    const sel=emps.map(e=>`<option value="${e.id}">${e.id}</option>`).join('');
-    compose.innerHTML=`<div class="pop-cwho"><span class="pop-cwho-lbl">Fra:</span><select id="pc-author">${sel}</select></div>
-      <textarea class="pop-ctextarea" id="pc-text" placeholder="Skriv kommentar… (Ctrl+Enter)"></textarea>
-      <button class="pop-csend" onclick="popSendComment()">Send</button>`;
-    compose.querySelector('#pc-text').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))popSendComment()});
+    const cloudEmp=getCloudEmp();
+    if(cloudEmp){
+      compose.innerHTML=`<div class="pop-cwho"><span class="pop-cwho-lbl">Fra:</span><span class="pop-cwho-name" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${cloudEmp.color}">${cloudEmp.id}</span></div>
+        <textarea class="pop-ctextarea" id="pc-text" placeholder="Skriv kommentar… (Ctrl+Enter)"></textarea>
+        <button class="pop-csend" onclick="popSendComment()">Send</button>`;
+      compose.querySelector('#pc-text').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))popSendComment()});
+    } else {
+      const reason=cloudUser?'Din bruger er ikke koblet til en medarbejder':'Log ind for at skrive kommentarer';
+      compose.innerHTML=`<div style="font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;padding:6px 2px;text-align:center">${reason}</div>`;
+    }
     cDiv.appendChild(compose);
     body.appendChild(cDiv);
     setTimeout(()=>{list.scrollTop=list.scrollHeight},30);
   }
+}
+
+// ── COMMENT AUTH ──────────────────────────────────────────
+function getCloudEmp(){
+  // Returns the emp object whose email matches the logged-in cloudUser, or null
+  if(!cloudUser?.email)return null;
+  return emps.find(e=>e.email&&e.email.toLowerCase()===cloudUser.email.toLowerCase())||null;
 }
 
 // stubs so no errors if referenced
@@ -3072,7 +3089,8 @@ function popDeleteProj(){
 }
 function popSendComment(){
   const text=document.getElementById('pc-text')?.value.trim();
-  const author=document.getElementById('pc-author')?.value;
+  const cloudEmp=getCloudEmp();
+  const author=cloudEmp?.id;
   if(!text||!author||!popTarget)return;
   comments.push({id:cseq++,targetType:popTarget.type,targetId:popTarget.id,author,text,ts:Date.now()});
   const cfg=getZoomConfig();const days=vdays();
@@ -3441,6 +3459,7 @@ function openEmpM(type='employee'){
   resourceType=type==='material'?'material':'employee';
   selEC=EP[0];
   document.getElementById('em-n').value='';
+  if(document.getElementById('em-email'))document.getElementById('em-email').value='';
   document.querySelector('#mbg-emp h3').textContent=resourceType==='material'?'Materiel':'Medarbejder';
   document.querySelector('#mbg-emp label').textContent=resourceType==='material'?'Navn / materiel':'Initialer / navn';
   buildECR();
@@ -3448,7 +3467,7 @@ function openEmpM(type='employee'){
   setTimeout(()=>document.getElementById('em-n').focus(),50);
 }
 function closeEmpM(){document.getElementById('mbg-emp').classList.remove('on')}
-function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;emps.push({id:name,color:selEC,type:resourceType});closeEmpM();render();showToast(`${name} tilføjet`)}
+function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;const email=(document.getElementById('em-email')?.value||'').trim().toLowerCase();emps.push({id:name,color:selEC,type:resourceType,...(email?{email}:{})});closeEmpM();render();showToast(`${name} tilføjet`)}
 function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class="sw ${selC===c.id?'on':''}" style="background:${c.bg};border-color:${c.tx}" data-cid="${c.id}" onclick="selC='${c.id}';document.querySelectorAll('#${id} .sw').forEach(s=>s.classList.toggle('on',s.dataset.cid==='${c.id}'))"></div>`).join('')}
 function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div class="sw ${selEC===c?'on':''}" style="background:${c}33;border-color:${c}" data-c="${c}" onclick="selEC='${c}';document.querySelectorAll('#em-cr .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==='${c}'))"></div>`).join('')}
 
