@@ -933,7 +933,7 @@ const DKD=['Søn','Man','Tirs','Ons','Tors','Fre','Lør'];
 const DKMs=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
 
 // ── DATE ─────────────────────────────────────────────────
-const ky=d=>d.toISOString().slice(0,10);
+const ky=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;};
 const pd=s=>new Date(s+'T00:00:00');
 const add=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r};
 const mon=d=>{const r=new Date(d),w=r.getDay();r.setDate(r.getDate()-(w===0?6:w-1));return r};
@@ -3087,10 +3087,11 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   const dragStartX=e.clientX;
   const dragStartScrollLeft=wrap.scrollLeft;
   const getDayAtX=(clientX)=>{
-    const liveDw=getZoomConfig().dw;  // always fresh — matches current bar widths
+    const liveDw=getZoomConfig().dw;
     const dxPixels=(clientX-dragStartX)+(wrap.scrollLeft-dragStartScrollLeft);
     const dayDelta=Math.round(dxPixels/liveDw);
-    return ky(add(pd(origStart),dayDelta));
+    const result=ky(add(pd(origStart),dayDelta));
+    return result;
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
@@ -3126,7 +3127,7 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
       });
     });
     const doApply=()=>{
-      if(ne<ns){return;}  // sanity guard — should never happen
+      if(ne<ns){return;}
       t.startDate=ns;t.endDate=ne;
       if(toEmpId&&toEmpId!==fromEmpId){
         t.staff=t.staff.filter(x=>x!==fromEmpId);
