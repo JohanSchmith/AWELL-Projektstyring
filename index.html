@@ -3075,8 +3075,11 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   flipDragDidMove=false;
   const dur=Math.round((pd(origEnd)-pd(origStart))/(1000*60*60*24));
   const wrap=document.getElementById(wrapId||'flip-gantt-wrap');
-  const barRect=barEl.getBoundingClientRect();
-  const clickDayInBar=Math.max(0,Math.floor((e.clientX-barRect.left)/cfg.dw));
+  const wr0=wrap.getBoundingClientRect();
+  const clickXInGantt=e.clientX-wr0.left+wrap.scrollLeft; // absolute pixel in gantt at mousedown
+  const barStartDay=days.findIndex(d=>ky(d)===task.startDate);
+  const barStartPx=(barStartDay<0?0:barStartDay)*cfg.dw+2;
+  const clickOffsetPx=Math.max(0,clickXInGantt-barStartPx); // pixels from bar-start to click
   const ghost=document.createElement('div');
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
@@ -3085,7 +3088,8 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   const getDateAtX=(clientX)=>{
     const wr=wrap.getBoundingClientRect(); // fresh each call
     const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
-    const dayIdx=Math.floor(mouseXInGantt/cfg.dw)-clickDayInBar;
+    const adjustedX=mouseXInGantt-clickOffsetPx; // align so bar-start follows cursor offset
+    const dayIdx=Math.max(0,Math.floor(adjustedX/cfg.dw));
     return ky(add(pd(day0str),dayIdx));
   };
   const onMove=ev=>{
