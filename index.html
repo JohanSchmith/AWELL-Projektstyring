@@ -555,7 +555,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .svc-sb-row{height:var(--row-h);display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--b1);gap:8px;cursor:pointer;transition:background .1s}
 .svc-sb-row:hover{background:var(--s2)}
 .svc-sb-row.sel{background:rgba(91,143,255,.1);border-left:2px solid var(--acc)}
-.svc-gantt-head{height:var(--head-h);background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0;overflow:hidden;position:relative}
+.svc-gantt-head{height:var(--head-h);background:var(--s1);overflow:hidden;position:relative}
 .svc-gantt-wrap{scrollbar-width:none}
 .svc-gantt-wrap::-webkit-scrollbar{display:none}
 .svc-gantt-inner-wrap{position:relative}
@@ -889,9 +889,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   <div class="svc-body" style="flex:1;display:flex;overflow:hidden">
     <div class="svc-sidebar" id="svc-sidebar"></div>
     <div class="svc-gantt-area" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
-      <div class="svc-gantt-head" id="svc-gantt-head"></div>
       <div style="flex:1;display:flex;overflow:hidden">
-        <div class="svc-gantt-wrap" id="svc-gantt-wrap" style="flex:1;overflow-x:auto;overflow-y:hidden;cursor:grab">
+        <div class="svc-gantt-wrap" id="svc-gantt-wrap" style="flex:1;overflow-x:auto;overflow-y:auto;cursor:grab;position:relative">
+          <div class="svc-gantt-head" id="svc-gantt-head" style="position:sticky;top:0;z-index:10;background:var(--s1);border-bottom:1px solid var(--b1)"></div>
           <div id="svc-gantt-inner"></div>
         </div>
         <div class="svc-detail-panel" id="svc-detail-panel">
@@ -4448,13 +4448,14 @@ function initSvcPan(){
     moved=false;
     wrap.style.cursor='grabbing';
     wrap.style.userSelect='none';
+    e.preventDefault();
   });
   window.addEventListener('mousemove',e=>{
     if(!svcPanDrag)return;
     const dx=e.clientX-svcPanDrag.startX;
     if(Math.abs(dx)>3)moved=true;
     wrap.scrollLeft=svcPanDrag.startScroll-dx;
-    updateSvcPeriodLabel();
+    // period label updated by scroll event listener
   });
   window.addEventListener('mouseup',()=>{
     if(!svcPanDrag)return;
@@ -4829,12 +4830,27 @@ function renderSvcGantt(){
     innerEl.appendChild(empty);
   }
 
-  // Sync vertical scroll between sidebar and gantt
+  // Sync vertical scroll: sidebar rows ↔ gantt rows
   const sbRowsEl=document.getElementById('svc-sb-rows-inner')?.parentElement;
   const ganttWrap=document.getElementById('svc-gantt-wrap');
   if(sbRowsEl&&ganttWrap){
-    ganttWrap.onscroll=()=>{if(sbRowsEl)sbRowsEl.scrollTop=ganttWrap.scrollTop};
-    if(sbRowsEl) sbRowsEl.onscroll=()=>{ganttWrap.scrollTop=sbRowsEl.scrollTop};
+    // Remove old listeners by replacing with fresh ones
+    const newWrap=ganttWrap.cloneNode(false);
+    // Don't actually clone — just wire scroll events
+    let _syncingScroll=false;
+    ganttWrap.onscroll=()=>{
+      if(_syncingScroll)return;
+      _syncingScroll=true;
+      if(sbRowsEl)sbRowsEl.scrollTop=ganttWrap.scrollTop;
+      updateSvcPeriodLabel();
+      _syncingScroll=false;
+    };
+    if(sbRowsEl) sbRowsEl.onscroll=()=>{
+      if(_syncingScroll)return;
+      _syncingScroll=true;
+      ganttWrap.scrollTop=sbRowsEl.scrollTop;
+      _syncingScroll=false;
+    };
   }
 
   // Scroll today into view + init pan drag
