@@ -242,10 +242,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-close{color:var(--t3);cursor:pointer;font-size:17px;line-height:1;padding:2px 4px;transition:color .1s;flex-shrink:0}
 .pop-close:hover{color:var(--t1)}
 /* Tabs */
-.pop-tabs{display:flex;gap:5px;padding:8px 12px 0;border-bottom:1px solid var(--b1)}
-.pop-tab{flex:1;padding:5px 6px;font-size:11px;font-weight:700;cursor:pointer;color:var(--t3);border:0.5px solid var(--b2);background:transparent;font-family:'Syne',sans-serif;border-radius:6px 6px 0 0;border-bottom:none;transition:all .15s;position:relative}
-.pop-tab:hover{color:var(--t1);background:var(--s3)}
-.pop-tab.on{color:var(--t1);background:var(--s1);border-color:var(--b2);border-bottom:1px solid var(--s1);margin-bottom:-1px}
+.pop-tabs{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--b1)}
+.pop-tab{flex:1;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;color:var(--t2);border:1px solid var(--b2);background:var(--s3);font-family:'Syne',sans-serif;border-radius:6px;transition:all .15s}
+.pop-tab:hover{border-color:var(--acc);color:var(--acc)}
+.pop-tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 /* Body */
 .pop-body{flex:1;overflow-y:auto;min-height:0}
 .pop-body::-webkit-scrollbar{width:4px}
@@ -2301,15 +2301,16 @@ function renderGantt(days,cfg){
             cb.innerHTML=`<span class="comment-badge-icon">💬</span><span class="comment-badge-num">${tcnt}</span>`;
             cb.title=`${tcnt} kommentar${tcnt!==1?'er':''}`;
             cb.addEventListener('click',e2=>{e2.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e2);setTimeout(()=>setPopTab('comments'),10);});
+            cb.addEventListener('mouseenter',()=>showCmtTooltip(cb,task.id));
+            cb.addEventListener('mouseleave',hideCmtTooltip);
             bar.appendChild(cb);
           }
-          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
-          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
-          bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
+          bar.addEventListener('mousedown',e=>{if(_depPickTaskId!=null||rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
+          bar.addEventListener('mousedown',e=>{if(_depPickTaskId!=null||rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
+          bar.addEventListener('click',e=>{if(_depPickTaskId!=null||rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
-          bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
-          bar.addEventListener('mouseleave',hideCmtTooltip);
+
           bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
           bar.addEventListener('dragleave',()=>bar.style.outline='');
           bar.addEventListener('drop',e=>{
@@ -2435,11 +2436,10 @@ function renderGantt(days,cfg){
           }
           const rzR=document.createElement('div');rzR.className='rz rz-r';
           rzR.addEventListener('mousedown',e=>{e.stopPropagation();startRz(e,task,'r',days,cfg)});bar.appendChild(rzR);
-          bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
+          bar.addEventListener('click',e=>{if(_depPickTaskId!=null||rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
-          bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
-          bar.addEventListener('mouseleave',hideCmtTooltip);
+
           bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
           bar.addEventListener('dragleave',()=>bar.style.outline='');
           bar.addEventListener('drop',e=>{
@@ -2748,6 +2748,8 @@ function renderFlipGantt(days,cfg){
           openPopup('task',task.id,e2);
           setTimeout(()=>setPopTab('comments'),10);
         });
+        cb.addEventListener('mouseenter',()=>showCmtTooltip(cb,task.id));
+        cb.addEventListener('mouseleave',hideCmtTooltip);
         bar.appendChild(cb);
       }
 
@@ -2758,6 +2760,7 @@ function renderFlipGantt(days,cfg){
 
       // Click: open task popup
       bar.addEventListener('click',e=>{
+        if(_depPickTaskId!=null)return; // pick mode handles this
         if(rzTask)return;
         e.stopPropagation();
         selectedTid=task.id;
@@ -2766,11 +2769,11 @@ function renderFlipGantt(days,cfg){
       });
       bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
       bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
-      bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
-      bar.addEventListener('mouseleave',hideCmtTooltip);
+
 
       // Drag task bar to move to another day or employee
       bar.addEventListener('mousedown',e=>{
+        if(_depPickTaskId!=null)return; // let pick mode handle it
         if(rzTask)return;
         if(e.target.closest('.flip-rz,.flip-bar-cmtbadge'))return;
         if(e.button!==0)return;
