@@ -549,6 +549,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 :root.light .svc-badge-over{color:#b91c1c}
 :root.light .svc-badge-warn{color:#92400e}
 :root.light .svc-badge-ok{color:#065f46}
+.svc-sidebar{width:var(--label-w);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);overflow-y:hidden;display:flex;flex-direction:column}
+.svc-sb-head{height:var(--head-h);display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--b1);flex-shrink:0;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.svc-sb-rows{flex:1;overflow-y:auto;overflow-x:hidden}
+.svc-sb-row{height:var(--row-h);display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--b1);gap:8px;cursor:pointer;transition:background .1s}
+.svc-sb-row:hover{background:var(--s2)}
+.svc-sb-row.sel{background:rgba(91,143,255,.1);border-left:2px solid var(--acc)}
+.svc-gantt-head{height:var(--head-h);background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0;overflow:hidden;position:relative}
+.svc-gantt-wrap{scrollbar-width:none}
+.svc-gantt-wrap::-webkit-scrollbar{display:none}
+.svc-gantt-inner-wrap{position:relative}
+.svc-gantt-row{height:var(--row-h);border-bottom:1px solid var(--b1);position:relative;overflow:visible}
+.svc-bar{position:absolute;height:24px;top:10px;border-radius:4px;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;cursor:pointer;transition:filter .1s;z-index:2}
+.svc-bar:hover{filter:brightness(1.15)}
+.svc-bar.past{background:#4effa022;border:1px solid #4effa055;color:#4effa0}
+.svc-bar.upcoming{background:#5b8fff22;border:1px solid #5b8fff55;color:#5b8fff}
+.svc-bar.warn{background:#ff9f4322;border:1px solid #ff9f4366;color:var(--warn)}
+.svc-bar.over{background:#ff5e5e22;border:1px solid #ff5e5e66;color:var(--danger)}
+:root.light .svc-bar.past{color:#065f46}
+:root.light .svc-bar.upcoming{color:#1a3a8a}
+:root.light .svc-bar.warn{color:#92400e}
+:root.light .svc-bar.over{color:#b91c1c}
+.svc-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:4;pointer-events:none}
+.svc-alarm-line{position:absolute;top:0;bottom:0;width:1px;background:var(--warn);opacity:.45;z-index:3;pointer-events:none}
+.svc-detail-panel{width:280px;flex-shrink:0;border-left:1px solid var(--b1);overflow-y:auto;background:var(--bg)}
 .svc-detail{flex:1;overflow-y:auto;background:var(--bg)}
 .svc-detail-empty{display:flex;align-items:center;justify-content:center;height:200px;font-size:12px;font-family:'DM Mono',monospace;color:var(--t3)}
 .svc-detail-inner{padding:20px 24px;max-width:700px}
@@ -848,14 +872,30 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <button class="svc-ftag" data-f="soon" onclick="setSvcFilter('soon')">⚠ Snart</button>
       <button class="svc-ftag" data-f="ok" onclick="setSvcFilter('ok')">✓ OK</button>
     </div>
+    <div style="display:flex;gap:6px;align-items:center;padding:0 8px;border-left:1px solid var(--b1);border-right:1px solid var(--b1)">
+      <button class="nb" onclick="svcNavPrev()">←</button>
+      <span id="svc-period-lbl" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--t1);min-width:160px;text-align:center"></span>
+      <button class="nb" onclick="svcNavNext()">→</button>
+      <button class="nb" onclick="svcNavToday()">I dag</button>
+    </div>
     <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
       <span id="svc-alarm-indicator" style="display:none;font-size:10px;font-family:'DM Mono',monospace;color:var(--warn)"></span>
       <button class="btn btn-p" onclick="openSvcM()">+ Tilføj service</button>
     </div>
   </div>
-  <div class="svc-layout">
-    <div class="svc-list" id="svc-list"></div>
-    <div class="svc-detail" id="svc-detail"><div class="svc-detail-empty">Vælg et stykke materiel for at se detaljer</div></div>
+  <div class="svc-body" style="flex:1;display:flex;overflow:hidden">
+    <div class="svc-sidebar" id="svc-sidebar"></div>
+    <div class="svc-gantt-area" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+      <div class="svc-gantt-head" id="svc-gantt-head"></div>
+      <div style="flex:1;display:flex;overflow:hidden">
+        <div class="svc-gantt-wrap" id="svc-gantt-wrap" style="flex:1;overflow-x:auto;overflow-y:hidden;cursor:grab">
+          <div id="svc-gantt-inner"></div>
+        </div>
+        <div class="svc-detail-panel" id="svc-detail-panel">
+          <div class="svc-detail-empty" style="padding:20px;font-size:11px;font-family:'DM Mono',monospace;color:var(--t3)">Klik på en bar for detaljer</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -885,13 +925,16 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       </div>
     </div>
     <div class="fg"><label>Alarm <span style="font-size:10px;color:var(--t3);font-weight:400">(dage før deadline)</span></label>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input type="number" id="svc-alarm-days" min="0" max="365" value="30" style="width:70px">
         <span style="font-size:11px;color:var(--t2);font-family:'DM Mono',monospace">dage før</span>
         <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);font-family:'DM Mono',monospace;cursor:pointer">
-          <input type="checkbox" id="svc-alarm-email" style="accent-color:var(--acc)"> Send e-mail alarm
+          <input type="checkbox" id="svc-alarm-email" style="accent-color:var(--acc)" onchange="document.getElementById('svc-email-wrap').style.display=this.checked?'':' none'"> Send e-mail alarm
         </label>
       </div>
+    </div>
+    <div class="fg" id="svc-email-wrap" style="display:none"><label>Send alarm til <span style="font-size:10px;color:var(--t3);font-weight:400">(e-mail adresse)</span></label>
+      <input id="svc-alarm-email-addr" type="email" placeholder="ansvarlig@firma.dk" style="font-family:'DM Mono',monospace">
     </div>
     <div class="fg"><label>Note <span style="font-size:10px;color:var(--t3);font-weight:400">(valgfri)</span></label>
       <input id="svc-note-inp" placeholder="Ekstra info…" maxlength="200">
@@ -4254,35 +4297,29 @@ function svcDaysLeft(svc){
   const next=new Date(svc.nextDate+'T00:00:00');
   return Math.round((next-today)/(1000*60*60*24));
 }
-
 function svcStatus(svc){
   const d=svcDaysLeft(svc);
   if(d===null)return'none';
   if(d<0)return'over';
-  if(d<=( svc.alarmDays||30))return'warn';
+  if(d<=(svc.alarmDays||30))return'warn';
   return'ok';
 }
-
 function svcStatusLabel(svc){
   const d=svcDaysLeft(svc);
   if(d===null)return'Ingen dato';
   if(d<0)return`Overskredet ${Math.abs(d)} dg`;
   if(d===0)return'I dag!';
-  if(d<=( svc.alarmDays||30))return`Om ${d} dage`;
   return`Om ${d} dage`;
 }
-
 function setSvcFilter(f){
   svcFilter=f;
   document.querySelectorAll('.svc-ftag').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
-  renderSvcList();
+  renderSvcView();
 }
-
 function svcMatColor(svc){
   const emp=emps.find(e=>e.id===svc.matId);
   return emp?emp.color:'#888';
 }
-
 function addDuration(dateStr,val,unit){
   const d=new Date(dateStr+'T00:00:00');
   if(unit==='days')d.setDate(d.getDate()+val);
@@ -4292,220 +4329,359 @@ function addDuration(dateStr,val,unit){
   return ky(d);
 }
 
+// ── SERVICE GANTT STATE ───────────────────────────────────
+let svcGanttStart=null; // Date: first day of view
+const SVC_MONTHS=12; // months visible
+let svcDragState=null;
+
+function svcNavPrev(){
+  if(!svcGanttStart)svcInitGanttStart();
+  svcGanttStart=new Date(svcGanttStart);
+  svcGanttStart.setMonth(svcGanttStart.getMonth()-3);
+  renderSvcView();
+}
+function svcNavNext(){
+  if(!svcGanttStart)svcInitGanttStart();
+  svcGanttStart=new Date(svcGanttStart);
+  svcGanttStart.setMonth(svcGanttStart.getMonth()+3);
+  renderSvcView();
+}
+function svcNavToday(){
+  svcInitGanttStart();
+  renderSvcView();
+}
+function svcInitGanttStart(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setMonth(d.getMonth()-2);d.setDate(1);
+  svcGanttStart=d;
+}
+
+// Ensure all material emps have at least a placeholder serviceItem so they show up
+function ensureSvcRows(){
+  const mats=emps.filter(e=>resourceKind(e)==='material');
+  mats.forEach(emp=>{
+    const has=serviceItems.some(s=>s.matId===emp.id);
+    if(!has){
+      serviceItems.push({
+        id:`svc${svcSeq++}`,matId:emp.id,type:'',
+        lastDate:null,nextDate:null,freqVal:6,freqUnit:'months',
+        alarmDays:30,alarmEmail:false,alarmEmailAddr:null,note:null,history:[],
+        placeholder:true
+      });
+    }
+  });
+  // Remove placeholders for emps that no longer exist
+  serviceItems=serviceItems.filter(s=>!s.placeholder||emps.some(e=>e.id===s.matId));
+}
+
 function renderSvcView(){
+  if(!svcGanttStart)svcInitGanttStart();
+  ensureSvcRows();
   checkSvcAlarms();
-  renderSvcList();
-  if(selSvcId)renderSvcDetail(selSvcId);
+  renderSvcGantt();
+  if(selSvcId)renderSvcDetailPanel(selSvcId);
 }
 
 function checkSvcAlarms(){
   const ind=document.getElementById('svc-alarm-indicator');
   if(!ind)return;
-  const overdue=serviceItems.filter(s=>svcStatus(s)==='over');
-  const warn=serviceItems.filter(s=>svcStatus(s)==='warn');
-  if(overdue.length){
-    ind.style.display='';
-    ind.textContent=`⛔ ${overdue.length} forfald${overdue.length!==1?'ne':'en'}`;
-  } else if(warn.length){
-    ind.style.display='';
-    ind.style.color='var(--warn)';
-    ind.textContent=`⚠ ${warn.length} forfald${warn.length!==1?'er':'er'} snart`;
+  const real=serviceItems.filter(s=>!s.placeholder);
+  const overdue=real.filter(s=>svcStatus(s)==='over');
+  const warn=real.filter(s=>svcStatus(s)==='warn');
+  if(overdue.length){ind.style.display='';ind.style.color='var(--danger)';ind.textContent=`⛔ ${overdue.length} forfaldne`;}
+  else if(warn.length){ind.style.display='';ind.style.color='var(--warn)';ind.textContent=`⚠ ${warn.length} forfald snart`;}
+  else{ind.style.display='none';}
+}
+
+function renderSvcGantt(){
+  const sb=document.getElementById('svc-sidebar');
+  const headEl=document.getElementById('svc-gantt-head');
+  const innerEl=document.getElementById('svc-gantt-inner');
+  if(!sb||!headEl||!innerEl)return;
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const start=new Date(svcGanttStart);
+  const end=new Date(start);end.setMonth(end.getMonth()+SVC_MONTHS);
+  const totalDays=Math.round((end-start)/(1000*60*60*24));
+  const DW=28; // px per day
+
+  // Period label
+  const DKMs=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  const lbl=document.getElementById('svc-period-lbl');
+  if(lbl)lbl.textContent=`${DKMs[start.getMonth()]} ${start.getFullYear()} – ${DKMs[new Date(end.getTime()-1).getMonth()]} ${new Date(end.getTime()-1).getFullYear()}`;
+
+  const totalW=totalDays*DW;
+
+  // Filter items
+  const mats=emps.filter(e=>resourceKind(e)==='material');
+  let rows=[];
+  if(svcFilter==='all'){
+    // One row per material, showing all its service items
+    rows=mats.map(emp=>({
+      emp,
+      items:serviceItems.filter(s=>s.matId===emp.id&&!s.placeholder)
+    }));
+    // Also include service items for materials that might have been renamed/deleted
+    const orphans=serviceItems.filter(s=>!s.placeholder&&!mats.find(m=>m.id===s.matId));
+    orphans.forEach(s=>rows.push({emp:null,matId:s.matId,items:[s]}));
   } else {
-    ind.style.display='none';
-  }
-}
-
-function renderSvcList(){
-  const el=document.getElementById('svc-list');
-  if(!el)return;
-  const mats=emps.filter(e=>e.type==='material'||resourceKind(e)==='material');
-  // Build item list - one entry per serviceItem
-  let items=serviceItems.slice();
-  // Filter
-  if(svcFilter==='overdue')items=items.filter(s=>svcStatus(s)==='over');
-  else if(svcFilter==='soon')items=items.filter(s=>svcStatus(s)==='warn');
-  else if(svcFilter==='ok')items=items.filter(s=>svcStatus(s)==='ok');
-  // Sort: overdue first, then by days left
-  items.sort((a,b)=>{
-    const sa=svcStatus(a),sb=svcStatus(b);
-    const order={over:0,warn:1,ok:2,none:3};
-    if(order[sa]!==order[sb])return order[sa]-order[sb];
-    const da=svcDaysLeft(a)??9999,db=svcDaysLeft(b)??9999;
-    return da-db;
-  });
-
-  el.innerHTML='';
-  const head=document.createElement('div');
-  head.className='svc-list-head';
-  head.textContent=`${items.length} serviceinterval${items.length!==1?'er':''}`;
-  el.appendChild(head);
-
-  if(!items.length){
-    const empty=document.createElement('div');
-    empty.style.cssText='padding:24px 12px;text-align:center;font-size:11px;font-family:"DM Mono",monospace;color:var(--t3)';
-    empty.textContent=serviceItems.length?'Ingen i denne kategori':'Ingen serviceintervaller endnu — klik + Tilføj service';
-    el.appendChild(empty);
-    return;
+    rows=mats.map(emp=>({
+      emp,
+      items:serviceItems.filter(s=>s.matId===emp.id&&!s.placeholder&&
+        (svcFilter==='overdue'?svcStatus(s)==='over':
+         svcFilter==='soon'?svcStatus(s)==='warn':
+         svcStatus(s)==='ok'))
+    })).filter(r=>r.items.length);
   }
 
-  items.forEach(svc=>{
-    const status=svcStatus(svc);
-    const color=svcMatColor(svc);
-    const row=document.createElement('div');
-    row.className='svc-item'+(selSvcId===svc.id?' sel':'');
-    const badgeCls={over:'svc-badge-over',warn:'svc-badge-warn',ok:'svc-badge-ok',none:'svc-badge-none'}[status];
-    row.innerHTML=`
-      <div class="svc-item-dot" style="background:${color}"></div>
-      <div class="svc-item-body">
-        <div class="svc-item-name">${svc.matId} — ${svc.type}</div>
-        <div class="svc-item-sub">${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'Ingen dato sat'}</div>
+  // ── SIDEBAR ───────────────────────────────────────────
+  sb.innerHTML=`<div class="svc-sb-head">Materiel (${rows.length})</div><div class="svc-sb-rows" id="svc-sb-rows-inner"></div>`;
+  const sbRows=document.getElementById('svc-sb-rows-inner');
+  rows.forEach(row=>{
+    const emp=row.emp||{id:row.matId,color:'#888'};
+    const div=document.createElement('div');
+    div.className='svc-sb-row';
+    // Status: worst of all items
+    const statuses=row.items.map(s=>svcStatus(s));
+    const dot=statuses.includes('over')?'#ff5e5e':statuses.includes('warn')?'#ff9f43':'#4effa0';
+    const dotColor=row.items.length?dot:'var(--b2)';
+    div.innerHTML=`
+      <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+      <div style="width:8px;height:8px;border-radius:2px;background:${emp.color};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.id}</div>
+        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3)">${row.items.length?row.items.map(s=>s.type).join(', '):'Ingen serviceintervaller'}</div>
       </div>
-      <div class="svc-item-badge ${badgeCls}">${svcStatusLabel(svc)}</div>`;
-    row.addEventListener('click',()=>{
-      selSvcId=svc.id;
-      document.querySelectorAll('.svc-item').forEach(r=>r.classList.remove('sel'));
-      row.classList.add('sel');
-      renderSvcDetail(svc.id);
+      ${row.items.length===0?`<button class="nb" style="font-size:9px;padding:0 6px;height:20px" onclick="event.stopPropagation();openSvcMForMat('${emp.id}')">+</button>`:''}
+    `;
+    div.addEventListener('click',()=>{
+      if(row.items.length===1){selSvcId=row.items[0].id;renderSvcDetailPanel(selSvcId);}
+      else if(row.items.length>1){selSvcId=row.items[0].id;renderSvcDetailPanel(selSvcId);}
+      document.querySelectorAll('.svc-sb-row').forEach(r=>r.classList.remove('sel'));
+      div.classList.add('sel');
     });
-    el.appendChild(row);
+    sbRows.appendChild(div);
   });
+  if(!rows.length){
+    sbRows.innerHTML='<div style="padding:16px 12px;font-size:11px;font-family:&quot;DM Mono&quot;,monospace;color:var(--t3)">Ingen materiel oprettet.<br>Opret materiel i paletten.</div>';
+  }
+
+  // ── GANTT HEAD ────────────────────────────────────────
+  headEl.style.position='relative';
+  headEl.style.height='var(--head-h)';
+  let headHTML=`<div style="position:absolute;inset:0;display:flex;align-items:flex-end;overflow:hidden">`;
+  // Month bands
+  const cur=new Date(start);
+  while(cur<end){
+    const monthStart=new Date(cur);
+    const monthEnd=new Date(cur);monthEnd.setMonth(monthEnd.getMonth()+1);
+    const ms=Math.round((monthStart-start)/(1000*60*60*24))*DW;
+    const me=Math.min(totalW,Math.round((monthEnd-start)/(1000*60*60*24))*DW);
+    headHTML+=`<div style="position:absolute;left:${ms}px;width:${me-ms}px;height:100%;border-right:1px solid var(--b1);display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:6px;box-sizing:border-box">
+      <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--t2);padding-left:6px">${DKMs[cur.getMonth()]} ${cur.getFullYear()}</span>
+      <div style="display:flex;position:absolute;bottom:0;left:0;right:0;height:14px">`;
+    // Week marks
+    const d=new Date(monthStart);
+    while(d<monthEnd&&d<end){
+      if(d.getDay()===1){
+        const px=Math.round((d-start)/(1000*60*60*24))*DW;
+        headHTML+=`<div style="position:absolute;left:${px}px;width:1px;height:6px;bottom:0;background:var(--b1)"></div>`;
+      }
+      d.setDate(d.getDate()+1);
+    }
+    headHTML+='</div></div>';
+    cur.setMonth(cur.getMonth()+1);
+  }
+  // Today marker in head
+  const todayPx=Math.round((today-start)/(1000*60*60*24))*DW;
+  if(todayPx>=0&&todayPx<=totalW){
+    headHTML+=`<div style="position:absolute;left:${todayPx}px;top:0;bottom:0;width:2px;background:var(--acc);z-index:5"></div>`;
+  }
+  headHTML+='</div>';
+  headEl.innerHTML=headHTML;
+  headEl.style.width=totalW+'px';
+  headEl.style.position='relative';
+
+  // ── GANTT ROWS ────────────────────────────────────────
+  innerEl.style.width=totalW+'px';
+  innerEl.innerHTML='';
+
+  rows.forEach((row,ri)=>{
+    const rowEl=document.createElement('div');
+    rowEl.className='svc-gantt-row';
+    rowEl.style.width=totalW+'px';
+
+    // Alternating columns (month shading)
+    const bg=document.createElement('div');
+    bg.style.cssText='position:absolute;inset:0;display:flex;pointer-events:none';
+    const mc=new Date(start);let mi=0;
+    while(mc<end){
+      const ms2=Math.round((mc-start)/(1000*60*60*24))*DW;
+      const mn=new Date(mc);mn.setMonth(mn.getMonth()+1);
+      const me2=Math.min(totalW,Math.round((mn-start)/(1000*60*60*24))*DW);
+      const colDiv=document.createElement('div');
+      colDiv.style.cssText=`position:absolute;left:${ms2}px;width:${me2-ms2}px;height:100%;border-right:1px solid var(--b1);${mi%2===1?'background:rgba(255,255,255,.02)':''}`;
+      bg.appendChild(colDiv);
+      mc.setMonth(mc.getMonth()+1);mi++;
+    }
+    rowEl.appendChild(bg);
+
+    // Today line
+    const todayPx=Math.round((today-start)/(1000*60*60*24))*DW;
+    if(todayPx>=0&&todayPx<=totalW){
+      const tl=document.createElement('div');
+      tl.className='svc-today-line';tl.style.left=todayPx+'px';
+      rowEl.appendChild(tl);
+    }
+
+    const emp=row.emp||{id:row.matId,color:'#888'};
+
+    if(!row.items.length){
+      // Empty row — show "+ Tilføj" hint
+      const hint=document.createElement('div');
+      hint.style.cssText='position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--b2);pointer-events:none';
+      hint.textContent='Ingen serviceintervaller — klik + for at tilføje';
+      rowEl.appendChild(hint);
+    }
+
+    row.items.forEach(svc=>{
+      // Alarm line per service item
+      if(svc.nextDate&&svc.alarmDays){
+        const ad=new Date(svc.nextDate+'T00:00:00');
+        ad.setDate(ad.getDate()-svc.alarmDays);
+        const apx=Math.round((ad-start)/(1000*60*60*24))*DW;
+        if(apx>=0&&apx<=totalW){
+          const al=document.createElement('div');
+          al.className='svc-alarm-line';al.style.left=apx+'px';
+          al.title=`Alarm: ${svc.alarmDays} dage før`;
+          rowEl.appendChild(al);
+        }
+      }
+
+      // Past bar (lastDate → nextDate)
+      if(svc.lastDate){
+        const ls=Math.round((new Date(svc.lastDate+'T00:00:00')-start)/(1000*60*60*24))*DW;
+        const le=svc.nextDate?Math.round((new Date(svc.nextDate+'T00:00:00')-start)/(1000*60*60*24))*DW:ls+DW*30;
+        if(le>0&&ls<totalW){
+          const bar=document.createElement('div');
+          bar.className='svc-bar past';
+          bar.style.left=Math.max(0,ls)+'px';
+          bar.style.width=Math.min(totalW,le)-Math.max(0,ls)+'px';
+          bar.textContent=svc.type;
+          bar.title=`${svc.type} — udført ${svc.lastDate.split('-').reverse().join('.')}`;
+          bar.addEventListener('click',e=>{e.stopPropagation();selSvcId=svc.id;renderSvcDetailPanel(svc.id);document.querySelectorAll('.svc-sb-row').forEach((r,i)=>{r.classList.toggle('sel',i===ri)});});
+          rowEl.appendChild(bar);
+        }
+      }
+
+      // Upcoming bars (nextDate + repetitions)
+      let curDate=svc.nextDate;
+      for(let i=0;i<4&&curDate;i++){
+        const ns=Math.round((new Date(curDate+'T00:00:00')-start)/(1000*60*60*24))*DW;
+        const nextOcc=svc.freqVal?addDuration(curDate,svc.freqVal,svc.freqUnit):null;
+        const ne=nextOcc?Math.round((new Date(nextOcc+'T00:00:00')-start)/(1000*60*60*24))*DW:ns+DW*30;
+        if(ns>=totalW)break;
+        if(ne>0){
+          const d=svcDaysLeft({nextDate:curDate});
+          const cls=d<0?'over':d<=(svc.alarmDays||30)?'warn':'upcoming';
+          const bar=document.createElement('div');
+          bar.className=`svc-bar ${cls}`;
+          bar.style.left=Math.max(0,ns)+'px';
+          bar.style.width=Math.max(20,Math.min(totalW,ne)-Math.max(0,ns))+'px';
+          bar.textContent=i===0?svc.type:'';
+          bar.title=`${svc.type} — ${curDate.split('-').reverse().join('.')}${d<0?' (OVERSKREDET)':d===0?' (I DAG)':` (om ${d} dage)`}`;
+          bar.addEventListener('click',e=>{e.stopPropagation();selSvcId=svc.id;renderSvcDetailPanel(svc.id);document.querySelectorAll('.svc-sb-row').forEach((r2,i2)=>{r2.classList.toggle('sel',i2===ri)});});
+          rowEl.appendChild(bar);
+        }
+        if(!nextOcc)break;
+        curDate=nextOcc;
+      }
+    });
+
+    innerEl.appendChild(rowEl);
+  });
+
+  // Empty state
+  if(!rows.length){
+    const empty=document.createElement('div');
+    empty.style.cssText='padding:32px;text-align:center;font-size:12px;font-family:"DM Mono",monospace;color:var(--t3)';
+    empty.textContent='Opret materiel i paletten, og tilføj derefter serviceintervaller her.';
+    innerEl.appendChild(empty);
+  }
+
+  // Sync vertical scroll between sidebar and gantt
+  const sbRowsEl=document.getElementById('svc-sb-rows-inner')?.parentElement;
+  const ganttWrap=document.getElementById('svc-gantt-wrap');
+  if(sbRowsEl&&ganttWrap){
+    ganttWrap.onscroll=()=>{if(sbRowsEl)sbRowsEl.scrollTop=ganttWrap.scrollTop};
+    if(sbRowsEl) sbRowsEl.onscroll=()=>{ganttWrap.scrollTop=sbRowsEl.scrollTop};
+  }
+
+  // Scroll today into view on first load
+  if(ganttWrap&&todayPx>0){
+    const center=todayPx-ganttWrap.clientWidth/2;
+    if(ganttWrap.scrollLeft===0)ganttWrap.scrollLeft=Math.max(0,center);
+  }
 }
 
-function renderSvcDetail(id){
-  const el=document.getElementById('svc-detail');
+function openSvcMForMat(matId){
+  openSvcM(null);
+  setTimeout(()=>{
+    const sel=document.getElementById('svc-mat-sel');
+    if(sel)sel.value=matId;
+  },60);
+}
+
+function renderSvcDetailPanel(id){
+  const el=document.getElementById('svc-detail-panel');
   if(!el)return;
   const svc=serviceItems.find(s=>s.id===id);
-  if(!svc){el.innerHTML='<div class="svc-detail-empty">Vælg et stykke materiel</div>';return;}
+  if(!svc){el.innerHTML='<div style="padding:16px;font-size:11px;font-family:&quot;DM Mono&quot;,monospace;color:var(--t3)">Klik på en bar for detaljer</div>';return;}
   const status=svcStatus(svc);
   const color=svcMatColor(svc);
   const days=svcDaysLeft(svc);
   const daysClass=status==='over'?'danger':status==='warn'?'warn':'ok';
-
-  // Timeline: show 6 months back + 12 months ahead
-  const tlHTML=renderSvcTimeline(svc);
-
-  const histHTML=(svc.history||[]).slice().reverse().map(h=>`
+  const freqLabel=svc.freqVal?`Hver ${svc.freqVal} ${({days:'dag',weeks:'uge',months:'måned',years:'år'}[svc.freqUnit]||svc.freqUnit)}${svc.freqVal>1?'er':''}`:'—';
+  const histHTML=(svc.history||[]).slice().reverse().slice(0,5).map(h=>`
     <div class="svc-hist-row">
       <span class="svc-hist-date">${h.date.split('-').reverse().join('.')}</span>
       <span class="svc-hist-note">${h.note||svc.type}</span>
-    </div>`).join('')||'<div style="font-size:11px;color:var(--t3);font-family:\'DM Mono\',monospace">Ingen historik endnu</div>';
+    </div>`).join('')||'<div style="font-size:10px;color:var(--t3);padding:4px 0">Ingen historik</div>';
 
-  const freqLabel=svc.freqVal?`Hver ${svc.freqVal} ${({days:'dag',weeks:'uge',months:'måned',years:'år'}[svc.freqUnit]||svc.freqUnit)}${svc.freqVal>1?'er':''}`:'—';
-
-  el.innerHTML=`<div class="svc-detail-inner">
-    <div class="svc-detail-header">
-      <div class="svc-detail-dot" style="background:${color}"></div>
-      <div>
-        <div class="svc-detail-title">${svc.matId} — ${svc.type}</div>
-        <div class="svc-detail-sub">${freqLabel}${svc.note?` · ${svc.note}`:''}</div>
-      </div>
-      <button class="btn btn-g" style="margin-left:auto" onclick="openSvcM(${JSON.stringify(id)})">✏ Rediger</button>
+  el.innerHTML=`<div style="padding:14px 14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="width:9px;height:9px;border-radius:2px;background:${color};flex-shrink:0"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${svc.matId}</div>
+      <button class="btn btn-g" style="padding:2px 7px;font-size:10px" onclick="openSvcM('${id}')">✏</button>
     </div>
-
-    <div class="svc-cards">
-      <div class="svc-card">
-        <div class="svc-card-lbl">Næste service</div>
-        <div class="svc-card-val ${daysClass}">${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'—'}</div>
+    <div style="font-size:11px;color:var(--t2);margin-bottom:10px">${svc.type||'—'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+      <div class="svc-card" style="padding:8px 10px">
+        <div class="svc-card-lbl">Næste</div>
+        <div class="svc-card-val ${daysClass}" style="font-size:11px">${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'—'}</div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" style="padding:8px 10px">
         <div class="svc-card-lbl">Dage tilbage</div>
-        <div class="svc-card-val ${daysClass}">${days===null?'—':days<0?`${Math.abs(days)} overskredet`:`${days} dage`}</div>
+        <div class="svc-card-val ${daysClass}" style="font-size:11px">${days===null?'—':days<0?`${Math.abs(days)} ovsk.`:`${days} dage`}</div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" style="padding:8px 10px">
         <div class="svc-card-lbl">Frekvens</div>
-        <div class="svc-card-val">${freqLabel}</div>
+        <div class="svc-card-val" style="font-size:10px">${freqLabel}</div>
       </div>
-      <div class="svc-card">
+      <div class="svc-card" style="padding:8px 10px">
         <div class="svc-card-lbl">Sidst udført</div>
-        <div class="svc-card-val">${svc.lastDate?svc.lastDate.split('-').reverse().join('.'):'—'}</div>
+        <div class="svc-card-val" style="font-size:11px">${svc.lastDate?svc.lastDate.split('-').reverse().join('.'):'—'}</div>
       </div>
     </div>
-
-    ${tlHTML}
-
-    <div class="svc-section">
-      <div class="svc-section-title">Alarmer</div>
-      <div class="svc-alarm-row">
-        <span style="font-size:14px">${status==='over'?'🔴':status==='warn'?'🟠':'🟢'}</span>
-        <span style="color:var(--t2)">Visuel advarsel</span>
-        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${svc.alarmDays||30} dage før</span>
-      </div>
-      ${svc.alarmEmail?`<div class="svc-alarm-row">
-        <span style="font-size:14px">📧</span>
-        <span style="color:var(--t2)">E-mail alarm</span>
-        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${svc.alarmDays||30} dage før</span>
-      </div>`:''}
+    <div class="svc-section" style="margin-bottom:10px">
+      <div class="svc-section-title">Alarm</div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--t2)">${svc.alarmDays||30} dage før${svc.alarmEmail?`<br>📧 ${svc.alarmEmailAddr||'e-mail'}`:''}</div>
     </div>
-
-    <div class="svc-section">
-      <div class="svc-section-title">
-        <span>Historik</span>
-        <span style="color:var(--acc);cursor:pointer;font-size:10px" onclick="openSvcDoneM('${id}')">+ Marker udført</span>
-      </div>
+    <div class="svc-section" style="margin-bottom:10px">
+      <div class="svc-section-title"><span>Historik</span></div>
       ${histHTML}
     </div>
-
-    <div style="margin-top:8px">
-      <button class="btn btn-p" style="width:100%;justify-content:center" onclick="openSvcDoneM('${id}')">✓ Marker som udført</button>
-    </div>
-  </div>`;
-}
-
-function renderSvcTimeline(svc){
-  if(!svc.nextDate)return'';
-  const today=new Date();today.setHours(0,0,0,0);
-  // Show 3 months back, 9 months ahead
-  const start=new Date(today);start.setMonth(start.getMonth()-3);start.setDate(1);
-  const end=new Date(today);end.setMonth(end.getMonth()+9);end.setDate(1);
-  const totalMs=end-start;
-  const pct=d=>Math.max(0,Math.min(100,((new Date(d+'T00:00:00')-start)/totalMs)*100));
-
-  // Build month headers
-  const months=[];
-  const cur=new Date(start);
-  while(cur<end){
-    months.push(`${cur.getDate()===1?'':''}<div class="svc-tl-month">${['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'][cur.getMonth()]} ${cur.getFullYear()}</div>`);
-    cur.setMonth(cur.getMonth()+1);
-  }
-
-  // Build bars: last done + upcoming occurrences
-  const bars=[];
-  if(svc.lastDate){
-    const ls=pct(svc.lastDate);
-    const le=Math.min(100,pct(svc.nextDate));
-    if(le>ls) bars.push(`<div class="svc-tl-bar past" style="left:${ls.toFixed(1)}%;width:${(le-ls).toFixed(1)}%">${svc.type}</div>`);
-  }
-  // Next + 2 future occurrences
-  let curDate=svc.nextDate;
-  for(let i=0;i<3;i++){
-    if(!curDate)break;
-    const s=pct(curDate);
-    const nextOcc=svc.freqVal?addDuration(curDate,svc.freqVal,svc.freqUnit):null;
-    const e=nextOcc?Math.min(100,pct(nextOcc)):Math.min(100,s+8);
-    if(s>=100)break;
-    const d=svcDaysLeft({nextDate:curDate});
-    const cls=d<0?'over':d<=(svc.alarmDays||30)?'warn':'upcoming';
-    bars.push(`<div class="svc-tl-bar ${cls}" style="left:${s.toFixed(1)}%;width:${Math.max(3,(e-s)).toFixed(1)}%">${svc.type}</div>`);
-    if(!nextOcc)break;
-    curDate=nextOcc;
-  }
-
-  // Today line
-  const todayPct=((today-start)/totalMs)*100;
-  const todayLine=todayPct>=0&&todayPct<=100?`<div class="svc-tl-today" style="left:${todayPct.toFixed(1)}%"></div>`:'';
-
-  // Alarm line
-  let alarmLine='';
-  if(svc.nextDate&&svc.alarmDays){
-    const alarmDate=new Date(svc.nextDate+'T00:00:00');
-    alarmDate.setDate(alarmDate.getDate()-(svc.alarmDays||30));
-    const ap=((alarmDate-start)/totalMs)*100;
-    if(ap>=0&&ap<=100) alarmLine=`<div class="svc-tl-alarm-line" style="left:${ap.toFixed(1)}%" title="Alarmgrænse"></div>`;
-  }
-
-  return`<div class="svc-tl-wrap">
-    <div class="svc-tl-months">${months.join('')}</div>
-    <div class="svc-tl-row">${bars.join('')}${alarmLine}${todayLine}</div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;font-size:11px" onclick="openSvcDoneM('${id}')">✓ Marker udført</button>
   </div>`;
 }
 
@@ -4513,13 +4689,11 @@ function renderSvcTimeline(svc){
 function openSvcM(id=null){
   editSvcId=id;
   const svc=id?serviceItems.find(s=>s.id===id):null;
-  // Populate material dropdown
   const sel=document.getElementById('svc-mat-sel');
   const mats=emps.filter(e=>resourceKind(e)==='material');
   sel.innerHTML=mats.length
     ?mats.map(e=>`<option value="${e.id}"${svc&&svc.matId===e.id?' selected':''}>${e.id}</option>`).join('')
-    :'<option value="">— Ingen materiel oprettet endnu —</option>';
-  // Fill fields
+    :'<option value="">— Opret materiel i paletten —</option>';
   document.getElementById('svc-type-inp').value=svc?.type||'';
   document.getElementById('svc-last-date').value=svc?.lastDate||'';
   document.getElementById('svc-next-date').value=svc?.nextDate||'';
@@ -4527,6 +4701,9 @@ function openSvcM(id=null){
   document.getElementById('svc-freq-unit').value=svc?.freqUnit||'months';
   document.getElementById('svc-alarm-days').value=svc?.alarmDays??30;
   document.getElementById('svc-alarm-email').checked=svc?.alarmEmail||false;
+  const emailWrap=document.getElementById('svc-email-wrap');
+  if(emailWrap)emailWrap.style.display=svc?.alarmEmail?'':'none';
+  document.getElementById('svc-alarm-email-addr').value=svc?.alarmEmailAddr||'';
   document.getElementById('svc-note-inp').value=svc?.note||'';
   document.getElementById('svc-modal-title').textContent=svc?'Rediger serviceinterval':'Tilføj serviceinterval';
   document.getElementById('svc-save-btn').textContent=svc?'Gem':'Tilføj';
@@ -4534,9 +4711,7 @@ function openSvcM(id=null){
   document.getElementById('mbg-svc').classList.add('on');
   setTimeout(()=>document.getElementById('svc-type-inp').focus(),50);
 }
-
 function closeSvcM(){document.getElementById('mbg-svc').classList.remove('on');editSvcId=null;}
-
 function saveSvc(){
   const matId=document.getElementById('svc-mat-sel').value;
   const type=document.getElementById('svc-type-inp').value.trim();
@@ -4545,23 +4720,22 @@ function saveSvc(){
   const freqUnit=document.getElementById('svc-freq-unit').value;
   const lastDate=document.getElementById('svc-last-date').value||null;
   let nextDate=document.getElementById('svc-next-date').value||null;
-  // Auto-calc nextDate from lastDate + freq if nextDate empty
-  if(!nextDate&&lastDate&&freqVal) nextDate=addDuration(lastDate,freqVal,freqUnit);
+  if(!nextDate&&lastDate&&freqVal)nextDate=addDuration(lastDate,freqVal,freqUnit);
   const alarmDays=parseInt(document.getElementById('svc-alarm-days').value)||30;
   const alarmEmail=document.getElementById('svc-alarm-email').checked;
+  const alarmEmailAddr=document.getElementById('svc-alarm-email-addr').value.trim()||null;
   const note=document.getElementById('svc-note-inp').value.trim()||null;
+  // Remove placeholder if exists for this mat
+  serviceItems=serviceItems.filter(s=>!(s.placeholder&&s.matId===matId));
   if(editSvcId){
     const svc=serviceItems.find(s=>s.id===editSvcId);
-    if(svc){Object.assign(svc,{matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,note});}
+    if(svc)Object.assign(svc,{matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,alarmEmailAddr,note,placeholder:false});
     closeSvcM();saveState();renderSvcView();showToast('Serviceinterval opdateret');
   } else {
-    const svc={id:`svc${svcSeq++}`,matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,note,history:[]};
-    serviceItems.push(svc);
-    selSvcId=svc.id;
+    serviceItems.push({id:`svc${svcSeq++}`,matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,alarmEmailAddr,note,history:[],placeholder:false});
     closeSvcM();saveState();renderSvcView();showToast(`${type} tilføjet`);
   }
 }
-
 function deleteSvc(){
   if(!editSvcId)return;
   const svc=serviceItems.find(s=>s.id===editSvcId);
@@ -4571,7 +4745,7 @@ function deleteSvc(){
   closeSvcM();saveState();renderSvcView();showToast('Serviceinterval slettet');
 }
 
-// ── MARKÉR UDFØRT MODAL ───────────────────────────────────
+// ── MARKÉR UDFØRT ─────────────────────────────────────────
 function openSvcDoneM(id){
   doneSvcId=id;
   document.getElementById('svc-done-date').value=ky(new Date());
@@ -4589,12 +4763,14 @@ function confirmSvcDone(){
   if(!svc.history)svc.history=[];
   svc.history.push({date,note:note||svc.type});
   svc.lastDate=date;
-  if(svc.freqVal) svc.nextDate=addDuration(date,svc.freqVal,svc.freqUnit);
+  if(svc.freqVal)svc.nextDate=addDuration(date,svc.freqVal,svc.freqUnit);
+  svc.placeholder=false;
   closeSvcDoneM();
   saveState();
   renderSvcView();
-  showToast(`${svc.type} markeret som udført — næste: ${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'?'}`);
+  showToast(`${svc.type} markeret udført — næste: ${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'?'}`);
 }
+
 
 function renderVacView(days,cfg){
   const sb=document.getElementById('vac-sb-rows');
