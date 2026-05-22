@@ -838,8 +838,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <h3 id="tm-h">Ny opgave</h3>
     <div class="fg"><label>Projekt</label><select id="tm-proj"></select></div>
     <div class="fg"><label>Opgavebeskrivelse</label><input id="tm-name" placeholder="Boring + lufthæve"></div>
-    <div class="fg"><label>Startdato</label><input type="date" id="tm-s"></div>
-    <div class="fg"><label>Slutdato</label><input type="date" id="tm-e"></div>
+    <div class="fg"><label>Startdato</label><input type="date" id="tm-s" oninput="tmSyncFromDates()"></div>
+    <div class="fg" style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1"><label>Slutdato</label><input type="date" id="tm-e" oninput="tmSyncFromDates()"></div>
+      <div style="width:90px"><label>Varighed (dage)</label><input type="number" id="tm-dur" min="0.5" step="0.5" placeholder="f.eks. 3" oninput="tmSyncFromDur()"></div>
+    </div>
     <div class="fg"><label>Medarbejdere</label><div id="tm-staff-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>
     <div class="m-acts">
       <button class="btn btn-g" onclick="closeTaskM()">Annuller</button>
@@ -3073,23 +3076,18 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   const origStart=task.startDate;
   const origEnd=task.endDate;
   flipDragDidMove=false;
-  const dur=Math.round((pd(origEnd)-pd(origStart))/(1000*60*60*24));
+  const dur=daysBetween(origStart,origEnd);
   const wrap=document.getElementById(wrapId||'flip-gantt-wrap');
-  const wr0=wrap.getBoundingClientRect();
-  const clickXInGantt=e.clientX-wr0.left+wrap.scrollLeft; // absolute pixel in gantt at mousedown
-  const barStartDay=days.findIndex(d=>ky(d)===task.startDate);
-  const barStartPx=(barStartDay<0?0:barStartDay)*cfg.dw+2;
-  const clickOffsetPx=Math.max(0,clickXInGantt-barStartPx); // pixels from bar-start to click
   const ghost=document.createElement('div');
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
-  const day0str=ky(days[0]); // freeze reference date string
+  const day0str=ky(days[0]); // freeze: timelineDays[0] = vs - panBuffer
+  // startDate = the day column the cursor is over at drop
   const getDateAtX=(clientX)=>{
-    const wr=wrap.getBoundingClientRect(); // fresh each call
+    const wr=wrap.getBoundingClientRect();
     const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
-    const adjustedX=mouseXInGantt-clickOffsetPx; // align so bar-start follows cursor offset
-    const dayIdx=Math.max(0,Math.floor(adjustedX/cfg.dw));
+    const dayIdx=Math.max(0,Math.min(days.length-1,Math.floor(mouseXInGantt/cfg.dw)));
     return ky(add(pd(day0str),dayIdx));
   };
   const onMove=ev=>{
@@ -3269,6 +3267,28 @@ function renderTmStaffChips(){
   });
 }
 let tmStaff=[];
+
+// ── TASK MODAL VARIGHED SYNC ──────────────────────────────
+function tmSyncFromDates(){
+  const s=document.getElementById('tm-s').value;
+  const e=document.getElementById('tm-e').value;
+  if(s&&e&&e>=s){
+    const dur=daysBetween(s,e);
+    document.getElementById('tm-dur').value=dur||'';
+  } else {
+    document.getElementById('tm-dur').value='';
+  }
+}
+function tmSyncFromDur(){
+  const s=document.getElementById('tm-s').value;
+  const durVal=parseFloat(document.getElementById('tm-dur').value);
+  if(s&&!isNaN(durVal)&&durVal>0){
+    // half-day = 0.5 → round to nearest day for endDate (min 0 offset)
+    const daysOffset=Math.max(0,Math.round(durVal)-1);
+    const endD=ky(add(pd(s),daysOffset));
+    document.getElementById('tm-e').value=endD;
+  }
+}
 function openTaskM(preselPid,preselEmpId,preselDate){
   editTid=null;
   tmStaff=preselEmpId?[preselEmpId]:[];
@@ -3277,6 +3297,7 @@ function openTaskM(preselPid,preselEmpId,preselDate){
   const date=preselDate||ky(new Date());
   document.getElementById('tm-s').value=date;
   document.getElementById('tm-e').value=preselDate||ky(addWD(new Date(),4));
+  tmSyncFromDates();
   const sel=document.getElementById('tm-proj');
   sel.innerHTML=`<option value="">— Intern / ingen projekt —</option>`+projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===preselPid?'selected':''}>${p.num} – ${p.name}</option>`).join('');
   renderTmStaffChips();
@@ -3291,6 +3312,7 @@ function openTaskEdit(id){
   document.getElementById('tm-name').value=t.name;
   document.getElementById('tm-s').value=t.startDate;
   document.getElementById('tm-e').value=t.endDate;
+  tmSyncFromDates();
   const sel=document.getElementById('tm-proj');
   sel.innerHTML=`<option value="" ${!t.projId?'selected':''}>— Intern / ingen projekt —</option>`+projs.filter(p=>p.status!=='archived').map(p=>`<option value="${p.id}" ${p.id===t.projId?'selected':''}>${p.num} – ${p.name}</option>`).join('');
   renderTmStaffChips();
