@@ -572,9 +572,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-pick-mode [data-tid]{cursor:pointer!important;transition:filter .1s}
 .dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
 .dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.dep-chip{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:1px 6px 1px 5px;font-size:10px;font-family:'DM Mono',monospace;font-weight:700;border:1px solid transparent;max-width:160px}
+.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'DM Mono',monospace;font-weight:700;border:1.5px solid;max-width:180px}
 .dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dep-x{cursor:pointer;opacity:.55;font-size:11px;line-height:1;flex-shrink:0;margin-left:1px}
+.dep-x{cursor:pointer;opacity:.6;font-size:13px;line-height:1;flex-shrink:0;margin-left:2px}
 .dep-x:hover{opacity:1}
 </style>
 </head>
@@ -3576,24 +3576,26 @@ function startDepPick(taskId,type){
   _depPickEsc=e=>{if(e.key==='Escape')cancelDepPick();};
   document.addEventListener('keydown',_depPickEsc);
   // Click handler on bars
+  // Use mousedown in capture phase — fires before bar's click opens popup.
+  // Then absorb the subsequent click so the popup never opens.
   _depPickClick=e=>{
     const bar=e.target.closest('[data-tid]');
     if(!bar){
-      // Clicked outside a bar — cancel only if not clicking popup itself
       if(!e.target.closest('.popup'))cancelDepPick();
       return;
     }
+    // Absorb the click that will follow this mousedown
+    const absorbClick=ev=>{ev.stopImmediatePropagation();ev.preventDefault();ev.stopPropagation();};
+    bar.addEventListener('click',absorbClick,{capture:true,once:true});
+    document.addEventListener('click',absorbClick,{capture:true,once:true});
     e.stopImmediatePropagation();e.preventDefault();e.stopPropagation();
     const pickedId=parseInt(bar.dataset.tid);
     if(pickedId===_depPickTaskId){cancelDepPick();showToast('En opgave kan ikke afhænge af sig selv');return;}
-    // Check for circular dependency
     if(type==='suc'){
-      // Would creating taskId→pickedId create a cycle?
       const chain=getDepChain(pickedId);
       if(chain.find(t=>t.id===_depPickTaskId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
       const t=taskBy(_depPickTaskId);if(t)t.sucId=pickedId;
     } else {
-      // pickedId→taskId
       const chain=getDepChain(_depPickTaskId);
       if(chain.find(t=>t.id===pickedId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
       const t=taskBy(pickedId);if(t)t.sucId=_depPickTaskId;
@@ -3601,11 +3603,9 @@ function startDepPick(taskId,type){
     saveState();computeConflicts();render();
     finishDepPick();
     showToast('Kobling oprettet');
-    // Re-open popup on the same task
-    setTimeout(()=>{openPopup('task',taskId,null);},50);
+    setTimeout(()=>{openPopup('task',taskId,null);},80);
   };
-  // Use capture so we intercept before bar's own click handler
-  document.addEventListener('click',_depPickClick,{capture:true});
+  document.addEventListener('mousedown',_depPickClick,{capture:true});
 }
 
 function cancelDepPick(){
@@ -3624,7 +3624,7 @@ function finishDepPick(){
   if(_depPickBanner&&_depPickBanner.parentNode)_depPickBanner.parentNode.removeChild(_depPickBanner);
   _depPickBanner=null;
   if(_depPickEsc)document.removeEventListener('keydown',_depPickEsc);
-  if(_depPickClick)document.removeEventListener('click',_depPickClick,{capture:true});
+  if(_depPickClick)document.removeEventListener('mousedown',_depPickClick,{capture:true});
   _depPickEsc=null;_depPickClick=null;
 }
 
