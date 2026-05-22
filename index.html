@@ -4264,10 +4264,18 @@ function saveEmp(){
       emp.id=name;emp.color=selEC;emp.type=resourceType;
       if(email)emp.email=email;else delete emp.email;
     }
+    // Update serviceItems matId if name changed
+    if(name!==editEmpId){
+      serviceItems.forEach(s=>{if(s.matId===editEmpId)s.matId=name;});
+    }
     closeEmpM();render();showToast(`${name} opdateret`);
   } else {
     if(emps.some(e=>e.id===name)){showToast('Der findes allerede en ressource med det navn','warn');return;}
     emps.push({id:name,color:selEC,type:resourceType,...(email?{email}:{})});
+    // If new emp is material, ensure it gets a placeholder service row immediately
+    if(resourceType==='material'){
+      ensureSvcRows();
+    }
     closeEmpM();render();showToast(`${name} tilføjet`);
   }
 }
@@ -4280,6 +4288,7 @@ function deleteEmp(){
   emps=emps.filter(e=>e.id!==editEmpId);
   tasks.forEach(t=>{t.staff=t.staff.filter(s=>s!==editEmpId)});
   teams.forEach(tm=>{tm.members=tm.members.filter(m=>m!==editEmpId)});
+  serviceItems=serviceItems.filter(s=>s.matId!==editEmpId);
   closeEmpM();render();showToast(`${editEmpId} slettet`);
 }
 function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class="sw ${selC===c.id?'on':''}" style="background:${c.bg};border-color:${c.tx}" data-cid="${c.id}" onclick="selC='${c.id}';document.querySelectorAll('#${id} .sw').forEach(s=>s.classList.toggle('on',s.dataset.cid==='${c.id}'))"></div>`).join('')}
@@ -4445,12 +4454,13 @@ function renderSvcGantt(){
     const statuses=row.items.map(s=>svcStatus(s));
     const dot=statuses.includes('over')?'#ff5e5e':statuses.includes('warn')?'#ff9f43':'#4effa0';
     const dotColor=row.items.length?dot:'var(--b2)';
+    const chipBg=empBgColor(emp.color);
+    const chipTxt=empTextColor(emp.color);
     div.innerHTML=`
-      <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
-      <div style="width:8px;height:8px;border-radius:2px;background:${emp.color};flex-shrink:0"></div>
+      <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+      <div style="background:${chipBg};color:${chipTxt};border:1px solid ${emp.color}44;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;white-space:nowrap">${emp.id}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:11px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${emp.id}</div>
-        <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3)">${row.items.length?row.items.map(s=>s.type).join(', '):'Ingen serviceintervaller'}</div>
+        <div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${row.items.length?row.items.map(s=>s.type).join(', '):'—'}</div>
       </div>
       ${row.items.length===0?`<button class="nb" style="font-size:9px;padding:0 6px;height:20px" onclick="event.stopPropagation();openSvcMForMat('${emp.id}')">+</button>`:''}
     `;
@@ -4567,6 +4577,10 @@ function renderSvcGantt(){
           bar.className='svc-bar past';
           bar.style.left=Math.max(0,ls)+'px';
           bar.style.width=Math.min(totalW,le)-Math.max(0,ls)+'px';
+          bar.style.background=empBgColor(emp.color);
+          bar.style.borderColor=emp.color+'88';
+          bar.style.color=empTextColor(emp.color);
+          bar.style.opacity='0.7';
           bar.textContent=svc.type;
           bar.title=`${svc.type} — udført ${svc.lastDate.split('-').reverse().join('.')}`;
           bar.addEventListener('click',e=>{e.stopPropagation();selSvcId=svc.id;renderSvcDetailPanel(svc.id);document.querySelectorAll('.svc-sb-row').forEach((r,i)=>{r.classList.toggle('sel',i===ri)});});
@@ -4588,6 +4602,12 @@ function renderSvcGantt(){
           bar.className=`svc-bar ${cls}`;
           bar.style.left=Math.max(0,ns)+'px';
           bar.style.width=Math.max(20,Math.min(totalW,ne)-Math.max(0,ns))+'px';
+          // Use emp color for upcoming bars, status colors for warn/over
+          if(cls==='upcoming'){
+            bar.style.background=empBgColor(emp.color);
+            bar.style.borderColor=emp.color+'88';
+            bar.style.color=empTextColor(emp.color);
+          }
           bar.textContent=i===0?svc.type:'';
           bar.title=`${svc.type} — ${curDate.split('-').reverse().join('.')}${d<0?' (OVERSKREDET)':d===0?' (I DAG)':` (om ${d} dage)`}`;
           bar.addEventListener('click',e=>{e.stopPropagation();selSvcId=svc.id;renderSvcDetailPanel(svc.id);document.querySelectorAll('.svc-sb-row').forEach((r2,i2)=>{r2.classList.toggle('sel',i2===ri)});});
