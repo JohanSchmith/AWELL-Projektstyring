@@ -575,6 +575,16 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dep-x{cursor:pointer;opacity:.6;font-size:13px;line-height:1;flex-shrink:0;margin-left:2px}
 .dep-x:hover{opacity:1}
+
+/* Light mode: improve contrast on emp-color chips and avatars */
+:root.light .bar-chip,
+:root.light .emp-avatar,
+:root.light .pop-staff-chip,
+:root.light .pop-task-emp,
+:root.light .pop-cavatar,
+:root.light .cmt-tooltip-avatar,
+:root.light .pop-cwho-name,
+:root.light .dep-chip {filter:brightness(0.6) saturate(1.3)}
 </style>
 </head>
 <body>
@@ -966,6 +976,22 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script>
+
+// ── COLOR CONTRAST HELPER ────────────────────────────────
+// Returns a darkened version of a hex color for light theme text
+function empTextColor(hex){
+  if(!document.documentElement.classList.contains('light'))return hex;
+  // Parse hex and darken by ~50%
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const dr=Math.round(r*0.45),dg=Math.round(g*0.45),db=Math.round(b*0.45);
+  return `#${dr.toString(16).padStart(2,'0')}${dg.toString(16).padStart(2,'0')}${db.toString(16).padStart(2,'0')}`;
+}
+function empBgColor(hex){
+  if(!document.documentElement.classList.contains('light'))return hex+'22';
+  // Lighter bg in light mode for better readability
+  return hex+'18';
+}
+
 // ── PALETTES ─────────────────────────────────────────────
 const PC=[
   {id:'blue',   bg:'#1a3260',tx:'#82bbff',bd:'#2a52a0',bar:'#2a52a0'},
@@ -1705,7 +1731,7 @@ function renderPalette(){
       const chip=document.createElement('div');
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
       chip.draggable=true;
-      chip.style.cssText=`background:${e.color}22;color:${e.color};border-color:${e.color}44`;
+      chip.style.cssText=`background:${empBgColor(e.color)};color:${empTextColor(e.color)};border-color:${e.color}44`;
       chip.title=empHasConflict(e.id)?'⚠ Dobbeltbooket — højreklik for at skifte farve':'Højreklik for at skifte farve';
       chip.textContent=e.id;
       chip.addEventListener('dragstart',ev=>palDS(ev,e.id));
@@ -1743,7 +1769,7 @@ function renderPalette(){
         const emp=empBy(eid);if(!emp)return;
         const member=document.createElement('span');
         member.className='pal-team-member';
-        member.style.cssText=`background:${emp.color}22;color:${emp.color};border:1px solid ${emp.color}44`;
+        member.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};border:1px solid ${emp.color}44`;
         member.innerHTML=`${eid}<span class="cx" onclick="removeEmpFromTeam(event,${team.id},'${eid}')">×</span>`;
         box.appendChild(member);
       });
@@ -1828,7 +1854,7 @@ function renderPalette(){
       const chip=document.createElement('div');
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
       chip.draggable=true;
-      chip.style.cssText=`background:${e.color}22;color:${e.color};border-color:${e.color}44`;
+      chip.style.cssText=`background:${empBgColor(e.color)};color:${empTextColor(e.color)};border-color:${e.color}44`;
       chip.title=empHasConflict(e.id)?'Dobbeltbooket - højreklik for at skifte farve':'Højreklik for at skifte farve';
       chip.textContent=e.id;
       chip.addEventListener('dragstart',ev=>palDS(ev,e.id));
@@ -1873,7 +1899,7 @@ function renderPalette(){
         const emp=empBy(eid);if(!emp)return;
         const member=document.createElement('span');
         member.className='pal-team-member';
-        member.style.cssText=`background:${emp.color}22;color:${emp.color};border:1px solid ${emp.color}44`;
+        member.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};border:1px solid ${emp.color}44`;
         member.innerHTML=`${eid}<span class="cx" onclick="removeEmpFromTeam(event,${team.id},'${eid}')">×</span>`;
         box.appendChild(member);
       });
@@ -2287,7 +2313,7 @@ function renderGantt(days,cfg){
               const chip=document.createElement('div');
               chip.className='bar-chip'+(isECf?' conflict-chip':'');
               chip.draggable=true;
-              chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
+              chip.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};border-color:${emp.color}55`;
               chip.innerHTML=`${eid}<span class="cx" onclick="rmStaffFromBar(event,${task.id},'${eid}')">×</span>`;
               chip.addEventListener('dragstart',e2=>{e2.stopPropagation();dragEid=eid;dragEids=null;dragSrcTid=task.id;e2.dataTransfer.effectAllowed='move';chip.style.opacity='.3';setTimeout(()=>chip.style.opacity='',0)});
               chips.appendChild(chip);
@@ -2428,7 +2454,7 @@ function renderGantt(days,cfg){
               const chip=document.createElement('div');
               chip.className='bar-chip'+(isECf?' conflict-chip':'');
               chip.draggable=true;
-              chip.style.cssText=`background:${emp.color}33;color:${emp.color};border-color:${emp.color}55`;
+              chip.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};border-color:${emp.color}55`;
               chip.innerHTML=`${eid}<span class="cx" onclick="rmStaffFromBar(event,${task.id},'${eid}')">×</span>`;
               chip.addEventListener('dragstart',e2=>{e2.stopPropagation();dragEid=eid;dragEids=null;dragSrcTid=task.id;e2.dataTransfer.effectAllowed='move';chip.style.opacity='.3';setTimeout(()=>chip.style.opacity='',0)});
               chips.appendChild(chip);
@@ -2532,7 +2558,7 @@ function renderFlipSidebar(days,cfg){
     // Avatar (color picker)
     const avatar=document.createElement('div');
     avatar.className='emp-avatar';
-    avatar.style.cssText=`background:${emp.color}22;color:${emp.color}`;
+    avatar.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)}`;
     avatar.title='Klik for at skifte farve';
     avatar.textContent=emp.id.slice(0,4);
     avatar.addEventListener('click',e=>{
@@ -2923,8 +2949,8 @@ function buildPopup(e){
 
   const ccnt=commentCount(popTarget.type,popTarget.id);
   const tabDefs=isTask
-    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Ressourcer'},{id:'comments',lbl:ccnt?`💬 ${ccnt}`:'💬'}]
-    :[{id:'info',lbl:'Info'},{id:'opgaver',lbl:'Opgaver'},{id:'comments',lbl:ccnt?`💬 ${ccnt}`:'💬'}];
+    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Ressourcer'},{id:'comments',lbl:ccnt?`Kommentarer (${ccnt})`:'Kommentarer'}]
+    :[{id:'info',lbl:'Info'},{id:'opgaver',lbl:'Opgaver'},{id:'comments',lbl:ccnt?`Kommentarer (${ccnt})`:'Kommentarer'}];
 
   const tabsEl=document.getElementById('pop-tabs');
   tabsEl.innerHTML='';
@@ -3091,7 +3117,7 @@ function renderPopBody(){
       }
       const vacBadge=vacType?`<span style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:4px;${vacType==='ferie'?'background:#cc222233;color:#ff6060':'background:#c0701033;color:#e08820'}">${vacType==='ferie'?'Ferie':'Fri'}</span>`:'';
       const row=document.createElement('div');row.className='pop-staff-row';
-      row.innerHTML=`<div class="pop-staff-chip" style="background:${emp.color}22;color:${emp.color}">${eid}</div>
+      row.innerHTML=`<div class="pop-staff-chip" style="background:${empBgColor(emp.color)};color:${empTextColor(emp.color)}">${eid}</div>
         <span class="pop-staff-name">${eid}${vacBadge}</span>
         <button class="pop-staff-rm" onclick="popRmStaff('${eid}')">×</button>`;
       div.appendChild(row);
@@ -3124,7 +3150,7 @@ function renderPopBody(){
       const card=document.createElement('div');card.className='pop-task-card';
       card.innerHTML=`<div class="pop-task-name">${task.name}${hasCf?' ⚠':''}</div>
         <div class="pop-task-dates">${fmtDate(task.startDate)} – ${fmtDate(task.endDate)}</div>
-        <div class="pop-task-emps">${task.staff.map(eid=>{const emp=empBy(eid);return emp?`<span class="pop-task-emp" style="background:${emp.color}22;color:${emp.color}">${eid}</span>`:''}).join('')}</div>`;
+        <div class="pop-task-emps">${task.staff.map(eid=>{const emp=empBy(eid);return emp?`<span class="pop-task-emp" style="background:${empBgColor(emp.color)};color:${empTextColor(emp.color)}">${eid}</span>`:''}).join('')}</div>`;
       card.addEventListener('click',()=>{closePopup();scrollToAndOpen(task.id)});
       div.appendChild(card);
     });
@@ -3143,7 +3169,7 @@ function renderPopBody(){
       const el=document.createElement('div');el.className='pop-comment';
       el.style.cursor='pointer';
       el.innerHTML=`<div class="pop-comment-meta">
-        <div class="pop-cavatar" style="background:${col}22;color:${col}">${c.author}</div>
+        <div class="pop-cavatar" style="background:${empBgColor(col)};color:${empTextColor(col)}">${c.author}</div>
         <span class="pop-ctime">${ts}</span>
         <span class="pop-cdel" onclick="event.stopPropagation();popDelComment(${c.id})">slet</span>
       </div><div class="pop-ctext" id="pop-ctext-${c.id}">${escHtml(c.text)}</div>${c.files&&c.files.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${c.files.map(f=>`<span style="font-size:9px;font-family:DM Mono,monospace;background:var(--s1);border:0.5px solid var(--b2);border-radius:4px;padding:2px 6px;color:var(--t3)">${f.type&&f.type.startsWith("image/")?"🖼":"📄"} ${escHtml(f.name)}</span>`).join("")}</div>`:""}`;
@@ -3154,7 +3180,7 @@ function renderPopBody(){
     const compose=document.createElement('div');compose.className='pop-compose';
     const cloudEmp=getCloudEmp();
     if(cloudEmp){
-      compose.innerHTML=`<div class="pop-cwho"><span class="pop-cwho-lbl">Fra:</span><span class="pop-cwho-name" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${cloudEmp.color}">${cloudEmp.id}</span></div>
+      compose.innerHTML=`<div class="pop-cwho"><span class="pop-cwho-lbl">Fra:</span><span class="pop-cwho-name" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${empTextColor(cloudEmp.color)}">${cloudEmp.id}</span></div>
         <textarea class="pop-ctextarea" id="pc-text" placeholder="Skriv kommentar… (Ctrl+Enter)"></textarea>
         <button class="pop-csend" onclick="popSendComment()">Send</button>`;
       compose.querySelector('#pc-text').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))popSendComment()});
@@ -3405,7 +3431,7 @@ function openCmtDetail(cmtId){
   const d=new Date(c.ts);
   const ts=`${d.getDate()}. ${DKMs[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   document.getElementById('cmt-detail-avatar').textContent=c.author;
-  document.getElementById('cmt-detail-avatar').style.cssText=`height:24px;padding:0 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;flex-shrink:0;background:${col}22;color:${col}`;
+  document.getElementById('cmt-detail-avatar').style.cssText=`height:24px;padding:0 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;flex-shrink:0;background:${empBgColor(col)};color:${empTextColor(col)}`;
   document.getElementById('cmt-detail-task').textContent=taskLabel;
   document.getElementById('cmt-detail-time').textContent=`${c.author} · ${ts}`;
   document.getElementById('cmt-detail-text').value=c.text;
@@ -3506,7 +3532,7 @@ function showCmtTooltip(el,taskId){
     const d=new Date(c.ts);
     const ts=`${d.getDate()}. ${DKMs[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     html+=`<div class="cmt-tooltip-item" data-taskid="${taskId}" data-cmtid="${c.id}">
-      <div class="cmt-tooltip-avatar" style="background:${col}22;color:${col}">${escHtml(c.author)}</div>
+      <div class="cmt-tooltip-avatar" style="background:${empBgColor(col)};color:${empTextColor(col)}">${escHtml(c.author)}</div>
       <div class="cmt-tooltip-body">
         <div class="cmt-tooltip-meta">${escHtml(c.author)} · ${ts}</div>
         <div class="cmt-tooltip-text">${escHtml(c.text)}</div>
@@ -3844,7 +3870,7 @@ function renderTmStaffChips(){
   emps.forEach(emp=>{
     const sel=tmStaff.includes(emp.id);
     const chip=document.createElement('div');
-    chip.style.cssText=`height:26px;padding:0 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:2px solid ${sel?emp.color:'transparent'};background:${emp.color}22;color:${emp.color};transition:all .12s`;
+    chip.style.cssText=`height:26px;padding:0 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:2px solid ${sel?emp.color:'transparent'};background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};transition:all .12s`;
     chip.textContent=emp.id;
     chip.addEventListener('click',()=>{
       if(tmStaff.includes(emp.id))tmStaff=tmStaff.filter(id=>id!==emp.id);
@@ -4054,7 +4080,7 @@ function renderVacView(days,cfg){
 
     const avatar=document.createElement('div');
     avatar.className='emp-avatar';
-    avatar.style.cssText=`background:${emp.color}22;color:${emp.color}`;
+    avatar.style.cssText=`background:${empBgColor(emp.color)};color:${empTextColor(emp.color)}`;
     avatar.textContent=emp.id.slice(0,4);
     sbRow.appendChild(avatar);
 
@@ -4349,7 +4375,7 @@ function renderVacEmpChips(){
   emps.filter(emp=>resourceKind(emp)!=="material").forEach(emp=>{
     const sel=vacSelectedEmp===emp.id;
     const chip=document.createElement('div');
-    chip.style.cssText=`height:26px;padding:0 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:2px solid ${sel?emp.color:'transparent'};background:${emp.color}22;color:${emp.color};transition:all .12s`;
+    chip.style.cssText=`height:26px;padding:0 10px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;border:2px solid ${sel?emp.color:'transparent'};background:${empBgColor(emp.color)};color:${empTextColor(emp.color)};transition:all .12s`;
     chip.textContent=emp.id;
     chip.addEventListener('click',()=>{vacSelectedEmp=emp.id;renderVacEmpChips();});
     wrap.appendChild(chip);
