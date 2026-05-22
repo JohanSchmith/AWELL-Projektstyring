@@ -21,7 +21,7 @@
   --t1:#1a1a2e;--t2:#52526a;--t3:#8e8ea8;
   --bar-text-filter:brightness(0.5) saturate(1.4);
 }
-:root.light .comment-badge-icon{filter:grayscale(1) brightness(0.45) opacity(0.75)}
+:root.light .comment-badge-icon{opacity:0.75}
 /* Darken bar text on light theme — only the text elements, not the bar background */
 :root.light .bar-name,
 :root.light .flip-bar-name,
@@ -4273,7 +4273,12 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowRight')shiftP(1);
   }
 });
-['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')})});
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')});
+  const modal=el.querySelector('.modal');
+  if(modal)modal.addEventListener('click',e=>e.stopPropagation());
+});
 document.addEventListener('click',e=>{
   if(!e.target.closest('.more-wrap'))closeMoreMenu();
   if(!e.target.closest('#search-wrap'))
