@@ -838,10 +838,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
     <h3 id="tm-h">Ny opgave</h3>
     <div class="fg"><label>Projekt</label><select id="tm-proj"></select></div>
     <div class="fg"><label>Opgavebeskrivelse</label><input id="tm-name" placeholder="Boring + lufthæve"></div>
-    <div class="fg"><label>Startdato</label><input type="date" id="tm-s" oninput="tmSyncFromDates()"></div>
+    <div class="fg"><label>Startdato</label><input type="date" id="tm-s" onchange="tmSyncFromDates()"></div>
     <div class="fg" style="display:flex;gap:8px;align-items:flex-end">
-      <div style="flex:1"><label>Slutdato</label><input type="date" id="tm-e" oninput="tmSyncFromDates()"></div>
-      <div style="width:90px"><label>Varighed (dage)</label><input type="number" id="tm-dur" min="0.5" step="0.5" placeholder="f.eks. 3" oninput="tmSyncFromDur()"></div>
+      <div style="flex:1"><label>Slutdato</label><input type="date" id="tm-e" onchange="tmSyncFromDates()"></div>
+      <div style="width:90px"><label>Varighed (dage)</label><input type="number" id="tm-dur" min="1" step="1" placeholder="dage" onchange="tmSyncFromDur()"></div>
     </div>
     <div class="fg"><label>Medarbejdere</label><div id="tm-staff-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>
     <div class="m-acts">
@@ -3082,13 +3082,14 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
-  // days[i] is the date at pixel i*dw in the gantt.
-  // We look up the date directly from the days array using pixel position.
+  // Compute the date under the cursor fresh each time (avoids stale-closure issues).
+  // timelineDays()[i] is the date at pixel i*dw – same array used to render bars.
   const getDayAtX=(clientX)=>{
+    const freshDays=timelineDays(cfg);
     const wr=wrap.getBoundingClientRect();
     const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
-    const idx=Math.max(0,Math.min(days.length-1,Math.floor(mouseXInGantt/cfg.dw)));
-    return ky(days[idx]);
+    const idx=Math.max(0,Math.min(freshDays.length-1,Math.floor(mouseXInGantt/cfg.dw)));
+    return ky(freshDays[idx]);
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
@@ -3273,23 +3274,18 @@ function tmSyncFromDates(){
   const s=document.getElementById('tm-s').value;
   const e=document.getElementById('tm-e').value;
   if(s&&e&&e>=s){
-    // endDate is inclusive: start=Jan1, end=Jan1 = 1 day; start=Jan1, end=Jan3 = 3 days
-    const dur=daysBetween(s,e)+1;
-    document.getElementById('tm-dur').value=dur;
+    // endDate inclusive: start=Jan1 end=Jan1 = 1 dag; start=Jan1 end=Jan3 = 3 dage
+    document.getElementById('tm-dur').value=daysBetween(s,e)+1;
   } else {
     document.getElementById('tm-dur').value='';
   }
 }
 function tmSyncFromDur(){
   const s=document.getElementById('tm-s').value;
-  const durVal=parseFloat(document.getElementById('tm-dur').value);
-  if(s&&!isNaN(durVal)&&durVal>=0.5){
-    // 1 day → end = start (same day). 2 days → end = start+1. etc.
-    // For half-days: 0.5 → same day (half day, end=start)
-    const daysOffset=Math.max(0,Math.round(durVal*2)/2-1); // steps of 0.5
-    const fullDays=Math.floor(daysOffset);
-    const endD=ky(add(pd(s),fullDays));
-    document.getElementById('tm-e').value=endD;
+  const n=parseInt(document.getElementById('tm-dur').value,10);
+  if(s&&n>=1){
+    // 1 dag → slut = start; 2 dage → slut = start+1; osv.
+    document.getElementById('tm-e').value=ky(add(pd(s),n-1));
   }
 }
 function openTaskM(preselPid,preselEmpId,preselDate){
