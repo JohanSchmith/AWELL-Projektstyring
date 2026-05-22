@@ -503,12 +503,18 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .vac-legend-dot{width:12px;height:12px;border-radius:3px}
 
 
-.search-wrap{position:relative;display:flex;align-items:center;padding:0 6px;height:100%;min-width:120px;max-width:200px;flex:1 1 160px}
-.search-input{background:var(--s3);border:1px solid var(--b1);border-radius:6px;color:var(--t1);font-family:'DM Mono',monospace;font-size:11px;padding:5px 10px 5px 28px;outline:none;width:100%;transition:border-color .15s}
+.search-wrap{position:relative;display:flex;align-items:center;flex-shrink:0}
+.search-btn{background:var(--s3);border:1px solid var(--b1);color:var(--t2);border-radius:6px;cursor:pointer;font-size:15px;width:28px;height:26px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;padding:0}
+.search-btn:hover,.search-btn.open{border-color:var(--acc);color:var(--acc)}
+.search-popup{position:absolute;top:34px;right:0;width:300px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.55);z-index:300;display:none;padding:8px}
+.search-popup.open{display:block}
+.search-input{background:var(--s3);border:1px solid var(--b1);border-radius:6px;color:var(--t1);font-family:'DM Mono',monospace;font-size:11px;padding:5px 10px 5px 30px;outline:none;width:100%;transition:border-color .15s}
 .search-input:focus{border-color:var(--acc)}
-.search-icon{position:absolute;left:19px;color:var(--t3);font-size:12px;pointer-events:none}
-.search-results{position:absolute;top:calc(100% + 4px);left:10px;width:280px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:200;max-height:320px;overflow-y:auto;display:none}
-.search-results.open{display:block}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:12px;pointer-events:none}
+.search-results{max-height:280px;overflow-y:auto;margin-top:6px}
+.search-results:empty{display:none}
+.search-results::-webkit-scrollbar{width:4px}
+.search-results::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .search-results::-webkit-scrollbar{width:4px}
 .search-results::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .sr-section{padding:6px 12px 4px;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
@@ -641,10 +647,15 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <span class="cloud-dot"></span><span id="cloud-status-text">Lokal</span>
     </div>
     <div class="search-wrap" id="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input class="search-input" id="search-input" placeholder="Søg opgave, projekt…" autocomplete="off"
-        oninput="onSearch(this.value)" onfocus="onSearch(this.value)" />
-      <div class="search-results" id="search-results"></div>
+      <button class="search-btn" id="search-btn" onclick="toggleSearch()" title="Søg">🔍</button>
+      <div class="search-popup" id="search-popup">
+        <div style="position:relative">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="search-input" placeholder="Søg opgave, projekt…" autocomplete="off"
+            oninput="onSearch(this.value)" />
+        </div>
+        <div class="search-results" id="search-results"></div>
+      </div>
     </div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
     <button class="btn btn-p" onclick="openTaskM()">+ Opgave</button>
@@ -4527,6 +4538,22 @@ function saveVacEdit(){
 
 
 
+function toggleSearch(){
+  const popup=document.getElementById('search-popup');
+  const btn=document.getElementById('search-btn');
+  const isOpen=popup.classList.toggle('open');
+  btn.classList.toggle('open',isOpen);
+  if(isOpen){
+    setTimeout(()=>{
+      const inp=document.getElementById('search-input');
+      if(inp){inp.focus();inp.value='';document.getElementById('search-results').innerHTML='';}
+    },30);
+  }
+}
+function closeSearch(){
+  document.getElementById('search-popup')?.classList.remove('open');
+  document.getElementById('search-btn')?.classList.remove('open');
+}
 function onSearch(q){
   const res=document.getElementById('search-results');
   q=q.trim().toLowerCase();
@@ -4570,7 +4597,7 @@ function onSearch(q){
         <span class="sr-sub">${type==='task'&&h.proj?h.proj.num:type==='proj'?h.item.num:''}</span>`;
       row.addEventListener('click',()=>{
         document.getElementById('search-input').value='';
-        res.classList.remove('open');
+        closeSearch();
         if(type==='task'){setView('plan');scrollToAndOpen(h.item.id)}
         else if(type==='proj'){
           setView('plan');
@@ -4714,7 +4741,7 @@ document.addEventListener('keydown',e=>{
     ['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth'].forEach(id=>document.getElementById(id).classList.remove('on'));
     ['ctx-task','ctx-proj'].forEach(id=>document.getElementById(id).classList.remove('on'));
     closeMoreMenu();
-    document.getElementById('search-results').classList.remove('open');
+    closeSearch();
     document.getElementById('search-input').value='';
     closePopup();
   }
@@ -4741,8 +4768,7 @@ const _mbgObserver=new MutationObserver(()=>{
 });
 document.addEventListener('click',e=>{
   if(!e.target.closest('.more-wrap'))closeMoreMenu();
-  if(!e.target.closest('#search-wrap'))
-    document.getElementById('search-results').classList.remove('open');
+  if(!e.target.closest('#search-wrap')) closeSearch();
   if(popJustOpened)return;
   if(!e.target.closest('.popup')&&!e.target.closest('.cmt-side')&&!e.target.closest('.g-task-bar')&&!e.target.closest('.g-proj-bar')&&!e.target.closest('.flip-task-bar')&&!e.target.closest('.sb-proj')&&!e.target.closest('.sb-task')&&!e.target.closest('.cpick')&&!e.target.closest('.ctx'))
     closePopup();
