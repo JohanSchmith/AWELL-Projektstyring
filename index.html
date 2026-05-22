@@ -3603,7 +3603,8 @@ function startDepPick(taskId,type){
     saveState();computeConflicts();render();
     finishDepPick();
     showToast('Kobling oprettet');
-    setTimeout(()=>{openPopup('task',taskId,null);},80);
+    // Open popup on the task that was picked (so user sees the connection)
+    setTimeout(()=>{openPopup('task',pickedId,null);},80);
   };
   document.addEventListener('mousedown',_depPickClick,{capture:true});
 }
@@ -3721,17 +3722,7 @@ function drawDepArrows(ganttEl,days,cfg,taskRowSelector){
     path.setAttribute('d',`M${x1},${y1} C${cx1},${y1} ${cx2},${y2} ${x2},${y2}`);
     path.setAttribute('stroke',getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#5b8fff');
     svg.appendChild(path);
-    // Arrowhead
-    const angle=Math.atan2(y2-y1*0.1,x2-cx2);
-    const hs=6;
-    const ax=x2,ay=y2;
-    const p1x=ax-hs*Math.cos(angle-0.4),p1y=ay-hs*Math.sin(angle-0.4);
-    const p2x=ax-hs*Math.cos(angle+0.4),p2y=ay-hs*Math.sin(angle+0.4);
-    const head=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    head.setAttribute('class','dep-arrow-head');
-    head.setAttribute('points',`${ax},${ay} ${p1x},${p1y} ${p2x},${p2y}`);
-    head.setAttribute('fill',getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#5b8fff');
-    svg.appendChild(head);
+
   });
   ganttEl.appendChild(svg);
 }
