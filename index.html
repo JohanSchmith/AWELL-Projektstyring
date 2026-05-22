@@ -915,13 +915,14 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 <!-- EMP MODAL -->
 <div class="mbg" id="mbg-emp">
   <div class="modal">
-    <h3>Medarbejder og materiel</h3>
-    <div class="fg"><label>Initialer / navn / materiel</label><input id="em-n" placeholder="TFU" maxlength="20"></div>
+    <h3 id="emp-modal-title">Medarbejder og materiel</h3>
+    <div class="fg"><label id="emp-modal-namelbl">Initialer / navn / materiel</label><input id="em-n" placeholder="TFU" maxlength="20"></div>
     <div class="fg"><label>Farve</label><div class="cr" id="em-cr"></div></div>
     <div class="fg" id="em-email-wrap"><label>Login-email <span style="font-size:10px;color:var(--t3);font-weight:400">(valgfri — til kommentarer)</span></label><input id="em-email" type="email" placeholder="tfu@firma.dk" style="font-family:'DM Mono',monospace"></div>
     <div class="m-acts">
+      <button class="btn btn-g" id="emp-del-btn" style="display:none;color:var(--danger);border-color:var(--danger)" onclick="deleteEmp()">Slet</button>
       <button class="btn btn-g" onclick="closeEmpM()">Annuller</button>
-      <button class="btn btn-p" onclick="saveEmp()">Tilføj</button>
+      <button class="btn btn-p" id="emp-save-btn" onclick="saveEmp()">Tilføj</button>
     </div>
   </div>
 </div>
@@ -1458,6 +1459,7 @@ function render(){
   else if(view==='vac'){renderVacView(days,cfg)}
   else renderMyWeek();
   saveState();
+  updateAuthButtons();
   // Force archive section visibility after layout settles
   requestAnimationFrame(()=>{
     const sec=document.getElementById('sb-archive-section');
@@ -1763,12 +1765,13 @@ function renderPalette(){
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
       chip.draggable=true;
       chip.style.cssText=`background:${empBgColor(e.color)};color:${empTextColor(e.color)};border-color:${e.color}44`;
-      chip.title=empHasConflict(e.id)?'⚠ Dobbeltbooket — højreklik for at skifte farve':'Højreklik for at skifte farve';
-      chip.textContent=e.id;
+      chip.title=empHasConflict(e.id)?'⚠ Dobbeltbooket — dobbeltklik for at redigere':'Dobbeltklik for at redigere';
+      chip.innerHTML=`<span>${e.id}</span>${e.email?`<span style="font-size:8px;opacity:.6;margin-left:3px" title="${e.email}">✉</span>`:''}`;
       chip.addEventListener('dragstart',ev=>palDS(ev,e.id));
+      chip.addEventListener('dblclick',ev=>{ev.stopPropagation();openEmpM(e.type||'employee',e.id);});
       chip.addEventListener('contextmenu',ev=>{
         ev.preventDefault();
-        openColorPicker(ev,'emp',e.id,nc=>{e.color=nc;render();showToast(`${e.id} farve opdateret`)});
+        openEmpM(e.type||'employee',e.id);
       });
       chipBox.appendChild(chip);
     });
@@ -1886,12 +1889,13 @@ function renderPalette(){
       chip.className='pal-chip'+(empHasConflict(e.id)?' has-conflict':'');
       chip.draggable=true;
       chip.style.cssText=`background:${empBgColor(e.color)};color:${empTextColor(e.color)};border-color:${e.color}44`;
-      chip.title=empHasConflict(e.id)?'Dobbeltbooket - højreklik for at skifte farve':'Højreklik for at skifte farve';
-      chip.textContent=e.id;
+      chip.title=empHasConflict(e.id)?'Dobbeltbooket — dobbeltklik for at redigere':'Dobbeltklik for at redigere';
+      chip.innerHTML=`<span>${e.id}</span>${e.email?`<span style="font-size:8px;opacity:.6;margin-left:3px" title="${e.email}">✉</span>`:''}`;
       chip.addEventListener('dragstart',ev=>palDS(ev,e.id));
+      chip.addEventListener('dblclick',ev=>{ev.stopPropagation();openEmpM(e.type||'employee',e.id);});
       chip.addEventListener('contextmenu',ev=>{
         ev.preventDefault();
-        openColorPicker(ev,'emp',e.id,nc=>{e.color=nc;render();showToast(`${e.id} farve opdateret`)});
+        openEmpM(e.type||'employee',e.id);
       });
       (resourceKind(e)==='material'?matBox:empBox).appendChild(chip);
     });
@@ -4022,20 +4026,62 @@ function _doSaveTask(name,pid,s,e){
   }
   closeTaskM();computeConflicts();render();saveState();
 }
-function openEmpM(type='employee'){
+let editEmpId=null;
+function openEmpM(type='employee',empId=null){
   closePopup();
-  resourceType=type==='material'?'material':'employee';
-  selEC=EP[0];
-  document.getElementById('em-n').value='';
-  if(document.getElementById('em-email'))document.getElementById('em-email').value='';
-  document.querySelector('#mbg-emp h3').textContent=resourceType==='material'?'Materiel':'Medarbejder';
-  document.querySelector('#mbg-emp label').textContent=resourceType==='material'?'Navn / materiel':'Initialer / navn';
+  editEmpId=empId;
+  const emp=empId?emps.find(e=>e.id===empId):null;
+  resourceType=emp?emp.type:(type==='material'?'material':'employee');
+  selEC=emp?emp.color:EP[0];
+  const isMat=resourceType==='material';
+  document.getElementById('em-n').value=emp?emp.id:'';
+  if(document.getElementById('em-email'))document.getElementById('em-email').value=emp?.email||'';
+  document.getElementById('emp-modal-title').textContent=emp?(isMat?'Rediger materiel':'Rediger medarbejder'):(isMat?'Materiel':'Medarbejder');
+  document.getElementById('emp-modal-namelbl').textContent=isMat?'Navn / materiel':'Initialer / navn';
+  document.getElementById('emp-save-btn').textContent=emp?'Gem':'Tilføj';
+  document.getElementById('emp-del-btn').style.display=emp?'':'none';
   buildECR();
   document.getElementById('mbg-emp').classList.add('on');
   setTimeout(()=>document.getElementById('em-n').focus(),50);
 }
-function closeEmpM(){document.getElementById('mbg-emp').classList.remove('on')}
-function saveEmp(){const name=document.getElementById('em-n').value.trim().toUpperCase();if(!name)return;const email=(document.getElementById('em-email')?.value||'').trim().toLowerCase();emps.push({id:name,color:selEC,type:resourceType,...(email?{email}:{})});closeEmpM();render();showToast(`${name} tilføjet`)}
+function closeEmpM(){document.getElementById('mbg-emp').classList.remove('on');editEmpId=null;}
+function saveEmp(){
+  const name=document.getElementById('em-n').value.trim().toUpperCase();
+  if(!name)return;
+  const email=(document.getElementById('em-email')?.value||'').trim().toLowerCase();
+  if(editEmpId){
+    const emp=emps.find(e=>e.id===editEmpId);
+    if(emp){
+      // Check for duplicate id if name changed
+      if(name!==editEmpId&&emps.some(e=>e.id===name)){showToast('Der findes allerede en ressource med det navn','warn');return;}
+      // Update tasks/teams referencing old id
+      if(name!==editEmpId){
+        tasks.forEach(t=>{t.staff=t.staff.map(s=>s===editEmpId?name:s)});
+        teams.forEach(tm=>{tm.members=tm.members.map(m=>m===editEmpId?name:m)});
+        comments.forEach(c=>{if(c.author===editEmpId)c.author=name});
+        vacations.forEach(v=>{if(v.empId===editEmpId)v.empId=name});
+      }
+      emp.id=name;emp.color=selEC;emp.type=resourceType;
+      if(email)emp.email=email;else delete emp.email;
+    }
+    closeEmpM();render();showToast(`${name} opdateret`);
+  } else {
+    if(emps.some(e=>e.id===name)){showToast('Der findes allerede en ressource med det navn','warn');return;}
+    emps.push({id:name,color:selEC,type:resourceType,...(email?{email}:{})});
+    closeEmpM();render();showToast(`${name} tilføjet`);
+  }
+}
+function deleteEmp(){
+  if(!editEmpId)return;
+  const emp=emps.find(e=>e.id===editEmpId);
+  if(!emp)return;
+  const inUse=tasks.some(t=>t.staff.includes(editEmpId))||teams.some(tm=>tm.members.includes(editEmpId));
+  if(inUse&&!confirm(`${editEmpId} er tilknyttet opgaver eller hold. Vil du stadig slette?`))return;
+  emps=emps.filter(e=>e.id!==editEmpId);
+  tasks.forEach(t=>{t.staff=t.staff.filter(s=>s!==editEmpId)});
+  teams.forEach(tm=>{tm.members=tm.members.filter(m=>m!==editEmpId)});
+  closeEmpM();render();showToast(`${editEmpId} slettet`);
+}
 function buildCR(id){document.getElementById(id).innerHTML=PC.map(c=>`<div class="sw ${selC===c.id?'on':''}" style="background:${c.bg};border-color:${c.tx}" data-cid="${c.id}" onclick="selC='${c.id}';document.querySelectorAll('#${id} .sw').forEach(s=>s.classList.toggle('on',s.dataset.cid==='${c.id}'))"></div>`).join('')}
 function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div class="sw ${selEC===c?'on':''}" style="background:${c}33;border-color:${c}" data-c="${c}" onclick="selEC='${c}';document.querySelectorAll('#em-cr .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==='${c}'))"></div>`).join('')}
 
@@ -4853,6 +4899,28 @@ function updateAuthButtons(){
   const login=document.getElementById('login-btn'),logout=document.getElementById('logout-btn');
   if(login)login.style.display=cloudUser?'none':'';
   if(logout)logout.style.display=cloudUser?'':'none';
+  // Show which employee this user is linked to
+  let indicator=document.getElementById('cloud-emp-indicator');
+  if(!indicator){
+    const tb=document.querySelector('.tb-r');
+    if(tb){indicator=document.createElement('span');indicator.id='cloud-emp-indicator';indicator.style.cssText='font-size:10px;font-family:"DM Mono",monospace;color:var(--t3);white-space:nowrap;display:none';tb.insertBefore(indicator,tb.firstChild);}
+  }
+  if(indicator){
+    const emp=getCloudEmp();
+    if(emp){
+      indicator.style.display='';
+      indicator.style.color=emp.color||'var(--acc)';
+      indicator.textContent=`● ${emp.id}`;
+      indicator.title=`Logget ind som ${cloudUser.email} — koblet til ${emp.id}`;
+    } else if(cloudUser){
+      indicator.style.display='';
+      indicator.style.color='var(--t3)';
+      indicator.textContent=`${cloudUser.email.split('@')[0]}`;
+      indicator.title=`Logget ind som ${cloudUser.email} — ingen medarbejder koblet`;
+    } else {
+      indicator.style.display='none';
+    }
+  }
 }
 
 function openAuthM(){document.getElementById('mbg-auth').classList.add('on');setTimeout(()=>document.getElementById('auth-email').focus(),50)}
