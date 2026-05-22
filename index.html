@@ -3067,7 +3067,7 @@ function renderPopBody(){
         <span class="pop-ctime">${ts}</span>
         <span class="pop-cdel" onclick="event.stopPropagation();popDelComment(${c.id})">slet</span>
       </div><div class="pop-ctext" id="pop-ctext-${c.id}">${escHtml(c.text)}</div>${c.files&&c.files.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${c.files.map(f=>`<span style="font-size:9px;font-family:DM Mono,monospace;background:var(--s1);border:0.5px solid var(--b2);border-radius:4px;padding:2px 6px;color:var(--t3)">${f.type&&f.type.startsWith("image/")?"🖼":"📄"} ${escHtml(f.name)}</span>`).join("")}</div>`:""}`;
-      el.addEventListener('click',e=>{if(e.target.classList.contains('pop-cdel'))return;openCmtDetail(c.id);});
+      el.addEventListener('click',e=>{e.stopPropagation();if(e.target.classList.contains('pop-cdel'))return;openCmtDetail(c.id);});
       list.appendChild(el);
     });
     cDiv.appendChild(list);
@@ -3519,7 +3519,7 @@ function ctxTogglePassive(){const p=projBy(ctxPid);if(!p)return;p.status=p.statu
 function ctxDelProj(){if(!ctxPid)return;tasks=tasks.filter(t=>t.projId!==ctxPid);projs=projs.filter(p=>p.id!==ctxPid);showToast('Projekt slettet');ctxPid=null;render()}
 
 // ── MODALS ────────────────────────────────────────────────
-function openProjM(){editPid=null;selC=PC[0].id;['pm-num','pm-name'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-status').value='active';buildCR('pm-cr');document.getElementById('mbg-proj').classList.add('on');setTimeout(()=>document.getElementById('pm-num').focus(),50)}
+function openProjM(){closePopup();editPid=null;selC=PC[0].id;['pm-num','pm-name'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-status').value='active';buildCR('pm-cr');document.getElementById('mbg-proj').classList.add('on');setTimeout(()=>document.getElementById('pm-num').focus(),50)}
 function openProjEdit(id){const p=projBy(id);if(!p)return;editPid=id;selC=p.colorId;document.getElementById('pm-num').value=p.num;document.getElementById('pm-name').value=p.name;document.getElementById('pm-status').value=p.status||'active';buildCR('pm-cr');document.getElementById('mbg-proj').classList.add('on')}
 function closeProjM(){document.getElementById('mbg-proj').classList.remove('on')}
 function saveProj(){const num=document.getElementById('pm-num').value.trim(),name=document.getElementById('pm-name').value.trim(),status=document.getElementById('pm-status').value;if(!name)return;if(editPid){const p=projBy(editPid);if(p){p.num=num;p.name=name;p.colorId=selC;p.status=status}showToast('Projekt opdateret')}else{const maxOrd=projs.reduce((m,p)=>Math.max(m,p.order??0),0);projs.push({id:pseq++,num,name,colorId:selC,status,order:maxOrd+1});showToast('Projekt oprettet')}closeProjM();render()}
@@ -3563,6 +3563,7 @@ function tmSyncFromDur(){
 }
 function openTaskM(preselPid,preselEmpId,preselDate){
   editTid=null;
+  closePopup();
   tmStaff=preselEmpId?[preselEmpId]:[];
   document.getElementById('tm-h').textContent='Ny opgave';
   document.getElementById('tm-name').value='';
@@ -3637,6 +3638,7 @@ function _doSaveTask(name,pid,s,e){
   closeTaskM();computeConflicts();render();saveState();
 }
 function openEmpM(type='employee'){
+  closePopup();
   resourceType=type==='material'?'material':'employee';
   selEC=EP[0];
   document.getElementById('em-n').value='';
@@ -4278,6 +4280,15 @@ document.addEventListener('keydown',e=>{
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')});
   const modal=el.querySelector('.modal');
   if(modal)modal.addEventListener('click',e=>e.stopPropagation());
+});
+// Whenever a modal overlay opens, hide the popup so its DOM listeners can't fire
+const _mbgObserver=new MutationObserver(()=>{
+  const anyOpen=document.querySelector('.mbg.on');
+  const popup=document.getElementById('popup');
+  if(anyOpen&&popup.classList.contains('show')){closePopup();}
+});
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt'].forEach(id=>{
+  _mbgObserver.observe(document.getElementById(id),{attributeFilter:['class']});
 });
 document.addEventListener('click',e=>{
   if(!e.target.closest('.more-wrap'))closeMoreMenu();
