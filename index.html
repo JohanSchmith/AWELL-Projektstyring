@@ -564,6 +564,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .cmt-tooltip-meta{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin:0 0 2px}
 .cmt-tooltip-text{font-size:11px;color:var(--t1);line-height:1.4;margin:0;white-space:pre-wrap;word-break:break-word}
 .cmt-tooltip-more{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin:6px 0 0;padding-top:5px;border-top:0.5px solid var(--b2)}
+
+.dep-svg-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}
+.dep-arrow-path{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.dep-arrow-head{opacity:.7}
 </style>
 </head>
 <body>
@@ -2452,6 +2456,8 @@ function renderGantt(days,cfg){
   }
 
 
+  drawDepArrows(gantt,days,cfg);
+
   const wrap=document.getElementById('gantt-wrap');
   const sb=document.getElementById('sb-rows');
   const prevScrollTop=sb.scrollTop;
@@ -2812,6 +2818,7 @@ function renderFlipGantt(days,cfg){
   // Sync sidebar scroll
   const wrap=document.getElementById('flip-gantt-wrap');
   const sb=document.getElementById('flip-sb-rows');
+  drawDepArrows(gantt,days,cfg);
   syncHorizontalScroll('flip-gantt-wrap','flip-x-scroll','flip-x-scroll-inner',totalW,'flip-gantt-wrap');
   let _flipLock=false;
   wrap.onscroll=()=>{if(_flipLock)return;_flipLock=true;sb.scrollTop=wrap.scrollTop;_flipLock=false};
@@ -3509,6 +3516,66 @@ function applyDepShift(movedTaskId,oldStart,newStart,callback){
     callback();
   },{once:true});
   document.getElementById('dep-cancel-btn').addEventListener('click',()=>{cleanup();callback();},{once:true});
+}
+
+
+// ── DEP ARROW DRAWING ────────────────────────────────────
+function drawDepArrows(ganttEl,days,cfg,taskRowSelector){
+  // Remove existing overlay
+  ganttEl.querySelectorAll('.dep-svg-overlay').forEach(s=>s.remove());
+  const dw=cfg.dw;
+  // Build map: taskId → {barLeft, barRight, rowTop, rowMid}
+  // We find each task's bar element by data-tid and its parent row
+  const barMap={};
+  ganttEl.querySelectorAll('[data-tid]').forEach(bar=>{
+    const tid=parseInt(bar.dataset.tid);
+    const row=bar.parentElement;
+    if(!row)return;
+    const barL=parseInt(bar.style.left)||0;
+    const barW=parseInt(bar.style.width)||0;
+    const rowTop=row.offsetTop;
+    const rowH=row.offsetHeight;
+    barMap[tid]={left:barL,right:barL+barW,mid:rowTop+rowH/2,top:rowTop,h:rowH};
+  });
+  // Draw arrows for all tasks with sucId
+  const arrows=tasks.filter(t=>t.sucId&&barMap[t.id]&&barMap[t.sucId]);
+  if(!arrows.length)return;
+  const totalH=ganttEl.scrollHeight||ganttEl.offsetHeight;
+  const totalW=ganttEl.scrollWidth||ganttEl.offsetWidth;
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','dep-svg-overlay');
+  svg.setAttribute('viewBox',`0 0 ${totalW} ${totalH}`);
+  svg.style.width=totalW+'px';
+  svg.style.height=totalH+'px';
+  const col='var(--acc)';
+  arrows.forEach(t=>{
+    const from=barMap[t.id];
+    const to=barMap[t.sucId];
+    const x1=from.right+2;
+    const y1=from.mid;
+    const x2=to.left-2;
+    const y2=to.mid;
+    // Bezier control points
+    const cx1=x1+Math.max(20,Math.abs(x2-x1)*0.4);
+    const cx2=x2-Math.max(20,Math.abs(x2-x1)*0.4);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('class','dep-arrow-path');
+    path.setAttribute('d',`M${x1},${y1} C${cx1},${y1} ${cx2},${y2} ${x2},${y2}`);
+    path.setAttribute('stroke',getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#5b8fff');
+    svg.appendChild(path);
+    // Arrowhead
+    const angle=Math.atan2(y2-y1*0.1,x2-cx2);
+    const hs=6;
+    const ax=x2,ay=y2;
+    const p1x=ax-hs*Math.cos(angle-0.4),p1y=ay-hs*Math.sin(angle-0.4);
+    const p2x=ax-hs*Math.cos(angle+0.4),p2y=ay-hs*Math.sin(angle+0.4);
+    const head=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    head.setAttribute('class','dep-arrow-head');
+    head.setAttribute('points',`${ax},${ay} ${p1x},${p1y} ${p2x},${p2y}`);
+    head.setAttribute('fill',getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#5b8fff');
+    svg.appendChild(head);
+  });
+  ganttEl.appendChild(svg);
 }
 
 
