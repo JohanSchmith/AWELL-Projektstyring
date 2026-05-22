@@ -525,6 +525,69 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .sr-sub{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);flex-shrink:0}
 .sr-empty{padding:14px 12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--t3);text-align:center}
 
+/* ── SERVICE VIEW ── */
+.svc-topbar{height:44px;background:var(--s1);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
+.svc-filter-grp{display:flex;gap:4px}
+.svc-ftag{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:var(--t3);border:1px solid transparent;background:transparent;font-family:'Syne',sans-serif;transition:all .15s}
+.svc-ftag:hover{color:var(--t1)}
+.svc-ftag.on{background:var(--s2);border-color:var(--b2);color:var(--t1)}
+.svc-layout{display:flex;flex:1;overflow:hidden}
+.svc-list{width:300px;flex-shrink:0;border-right:1px solid var(--b1);overflow-y:auto;background:var(--s1)}
+.svc-list-head{padding:8px 12px 6px;border-bottom:1px solid var(--b1);font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.svc-item{padding:10px 12px;border-bottom:1px solid var(--b1);cursor:pointer;transition:background .1s;display:flex;align-items:center;gap:10px}
+.svc-item:hover{background:var(--s2)}
+.svc-item.sel{background:rgba(91,143,255,.1);border-left:2px solid var(--acc)}
+.svc-item-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.svc-item-body{flex:1;min-width:0}
+.svc-item-name{font-size:11px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svc-item-sub{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);margin-top:1px}
+.svc-item-badge{font-size:9px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:3px;font-weight:700;flex-shrink:0;white-space:nowrap}
+.svc-badge-over{background:#ff5e5e22;color:#ff8a8a;border:1px solid #ff5e5e44}
+.svc-badge-warn{background:#ff9f4322;color:#ffb76b;border:1px solid #ff9f4344}
+.svc-badge-ok{background:#4effa022;color:#4effa0;border:1px solid #4effa044}
+.svc-badge-none{background:var(--s3);color:var(--t3);border:1px solid var(--b2)}
+:root.light .svc-badge-over{color:#b91c1c}
+:root.light .svc-badge-warn{color:#92400e}
+:root.light .svc-badge-ok{color:#065f46}
+.svc-detail{flex:1;overflow-y:auto;background:var(--bg)}
+.svc-detail-empty{display:flex;align-items:center;justify-content:center;height:200px;font-size:12px;font-family:'DM Mono',monospace;color:var(--t3)}
+.svc-detail-inner{padding:20px 24px;max-width:700px}
+.svc-detail-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.svc-detail-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.svc-detail-title{font-size:15px;font-weight:700;color:var(--t1)}
+.svc-detail-sub{font-size:11px;font-family:'DM Mono',monospace;color:var(--t3);margin-top:2px}
+.svc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.svc-card{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:12px 14px}
+.svc-card-lbl{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.svc-card-val{font-size:13px;font-weight:700;color:var(--t1);font-family:'DM Mono',monospace}
+.svc-card-val.warn{color:var(--warn)}
+.svc-card-val.danger{color:var(--danger)}
+.svc-card-val.ok{color:#4effa0}
+:root.light .svc-card-val.ok{color:#065f46}
+.svc-section{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.svc-section-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.svc-alarm-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--b1);font-size:11px}
+.svc-alarm-row:last-child{border-bottom:none;padding-bottom:0}
+.svc-hist-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--b1);align-items:flex-start}
+.svc-hist-row:last-child{border-bottom:none;padding-bottom:0}
+.svc-hist-date{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);width:90px;flex-shrink:0;padding-top:1px}
+.svc-hist-note{font-size:11px;color:var(--t2);flex:1}
+.svc-tl-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:12px;overflow:hidden}
+.svc-tl-months{display:flex;margin-bottom:4px}
+.svc-tl-month{flex:1;font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);text-align:center}
+.svc-tl-row{height:26px;position:relative;background:var(--s2);border-radius:4px}
+.svc-tl-bar{position:absolute;height:18px;top:4px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden}
+.svc-tl-bar.past{background:#4effa022;border:1px solid #4effa044;color:#4effa0}
+.svc-tl-bar.upcoming{background:#5b8fff22;border:1px solid #5b8fff55;color:#5b8fff}
+.svc-tl-bar.warn{background:#ff9f4322;border:1px solid #ff9f4366;color:var(--warn)}
+.svc-tl-bar.over{background:#ff5e5e22;border:1px solid #ff5e5e66;color:var(--danger)}
+.svc-tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);border-radius:1px;z-index:3}
+.svc-tl-alarm-line{position:absolute;top:0;bottom:0;width:1px;background:var(--warn);opacity:.6;z-index:2}
+:root.light .svc-tl-bar.past{color:#065f46}
+:root.light .svc-tl-bar.upcoming{color:#1e3a8a}
+:root.light .svc-tl-bar.warn{color:#92400e}
+:root.light .svc-tl-bar.over{color:#b91c1c}
+
 /* ── VAC MODAL ── */
 .vac-emp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .vac-emp-chip{height:22px;padding:0 8px;border-radius:4px;font-size:10px;font-weight:var(--chip-weight);font-family:'DM Mono',monospace;display:flex;align-items:center}
@@ -638,6 +701,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <button class="vt" id="tv-flip" onclick="setView('flip')">Ressourcer</button>
       <button class="vt" id="tv-week" onclick="setView('week')">Min uge</button>
       <button class="vt" id="tv-vac" onclick="setView('vac')">Ferie & fri</button>
+      <button class="vt" id="tv-svc" onclick="setView('svc')">🔧 Service</button>
     </div>
   </div>
   <div class="tb-r">
@@ -775,7 +839,85 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   </div>
 </div>
 
+<!-- SERVICE VIEW -->
+<div class="main" id="vsvc" style="display:none;flex-direction:column;overflow:hidden">
+  <div class="svc-topbar">
+    <div class="svc-filter-grp" id="svc-filter-grp">
+      <button class="svc-ftag on" data-f="all" onclick="setSvcFilter('all')">Alle</button>
+      <button class="svc-ftag" data-f="overdue" onclick="setSvcFilter('overdue')">⛔ Forfaldne</button>
+      <button class="svc-ftag" data-f="soon" onclick="setSvcFilter('soon')">⚠ Snart</button>
+      <button class="svc-ftag" data-f="ok" onclick="setSvcFilter('ok')">✓ OK</button>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <span id="svc-alarm-indicator" style="display:none;font-size:10px;font-family:'DM Mono',monospace;color:var(--warn)"></span>
+      <button class="btn btn-p" onclick="openSvcM()">+ Tilføj service</button>
+    </div>
+  </div>
+  <div class="svc-layout">
+    <div class="svc-list" id="svc-list"></div>
+    <div class="svc-detail" id="svc-detail"><div class="svc-detail-empty">Vælg et stykke materiel for at se detaljer</div></div>
+  </div>
+</div>
+
 <!-- SHARED PALETTE — lives inside each sidebar via JS injection -->
+
+<!-- SERVICE MODAL -->
+<div class="mbg" id="mbg-svc">
+  <div class="modal" style="width:460px">
+    <h3 id="svc-modal-title">Tilføj serviceinterval</h3>
+    <div class="fg"><label>Materiel</label>
+      <select id="svc-mat-sel" style="font-family:'DM Mono',monospace;font-size:11px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;width:100%;outline:none"></select>
+    </div>
+    <div class="fg"><label>Servicetype</label><input id="svc-type-inp" placeholder="Periodisk syn, Olieskift…" maxlength="60"></div>
+    <div class="fg" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Sidst udført</label><input type="date" id="svc-last-date"></div>
+      <div><label>Næste service</label><input type="date" id="svc-next-date"></div>
+    </div>
+    <div class="fg"><label>Frekvens</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="svc-freq-val" min="1" max="999" value="6" style="width:70px">
+        <select id="svc-freq-unit" style="font-family:'DM Mono',monospace;font-size:11px;background:var(--s3);border:1px solid var(--b2);color:var(--t1);border-radius:6px;padding:5px 8px;outline:none">
+          <option value="days">Dage</option>
+          <option value="weeks">Uger</option>
+          <option value="months" selected>Måneder</option>
+          <option value="years">År</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Alarm <span style="font-size:10px;color:var(--t3);font-weight:400">(dage før deadline)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="svc-alarm-days" min="0" max="365" value="30" style="width:70px">
+        <span style="font-size:11px;color:var(--t2);font-family:'DM Mono',monospace">dage før</span>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);font-family:'DM Mono',monospace;cursor:pointer">
+          <input type="checkbox" id="svc-alarm-email" style="accent-color:var(--acc)"> Send e-mail alarm
+        </label>
+      </div>
+    </div>
+    <div class="fg"><label>Note <span style="font-size:10px;color:var(--t3);font-weight:400">(valgfri)</span></label>
+      <input id="svc-note-inp" placeholder="Ekstra info…" maxlength="200">
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-g" id="svc-del-btn" style="display:none;color:var(--danger);border-color:var(--danger)" onclick="deleteSvc()">Slet</button>
+      <button class="btn btn-g" onclick="closeSvcM()">Annuller</button>
+      <button class="btn btn-p" id="svc-save-btn" onclick="saveSvc()">Tilføj</button>
+    </div>
+  </div>
+</div>
+
+<!-- MARKÉR SERVICE UDFØRT MODAL -->
+<div class="mbg" id="mbg-svc-done">
+  <div class="modal" style="width:380px">
+    <h3>Marker service som udført</h3>
+    <div class="fg"><label>Dato for udførelse</label><input type="date" id="svc-done-date"></div>
+    <div class="fg"><label>Note <span style="font-size:10px;color:var(--t3);font-weight:400">(valgfri)</span></label>
+      <input id="svc-done-note" placeholder="f.eks. Udført af Jens, godkendt">
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-g" onclick="closeSvcDoneM()">Annuller</button>
+      <button class="btn btn-p" onclick="confirmSvcDone()">Gem og beregn næste</button>
+    </div>
+  </div>
+</div>
 
 <!-- FERIE / FRI MODAL -->
 <div class="mbg" id="mbg-vac">
@@ -1157,6 +1299,7 @@ function _updateHistBtns(){
 // specialDays: {[yyyy-mm-dd]: {type:'holiday'|'custom', name:string}}
 let specialDays={};
 let vacSeq=1;
+let serviceItems=[];let svcSeq=1;let svcFilter='all';let selSvcId=null;let editSvcId=null;let doneSvcId=null;
 
 // popup state
 let popTarget=null; // {type:'task'|'proj', id}
@@ -1313,10 +1456,12 @@ function setView(v){
   document.getElementById('vweek').style.display=v==='week'?'flex':'none';
   document.getElementById('vflip').style.display=v==='flip'?'flex':'none';
   document.getElementById('vvac').style.display=v==='vac'?'flex':'none';
+  document.getElementById('vsvc').style.display=v==='svc'?'flex':'none';
   document.getElementById('tv-plan').classList.toggle('on',v==='plan');
   document.getElementById('tv-week').classList.toggle('on',v==='week');
   document.getElementById('tv-flip').classList.toggle('on',v==='flip');
   document.getElementById('tv-vac').classList.toggle('on',v==='vac');
+  document.getElementById('tv-svc').classList.toggle('on',v==='svc');
   render();
 }
 
@@ -1468,6 +1613,7 @@ function render(){
   if(view==='plan'){renderSidebar(days,cfg);renderPalette();renderGantt(days,cfg)}
   else if(view==='flip'){renderFlipSidebar(days,cfg);renderPalette();renderFlipGantt(days,cfg)}
   else if(view==='vac'){renderVacView(days,cfg)}
+  else if(view==='svc'){renderSvcView()}
   else renderMyWeek();
   saveState();
   updateAuthButtons();
@@ -4099,6 +4245,357 @@ function buildECR(){document.getElementById('em-cr').innerHTML=EP.map(c=>`<div c
 // ── FERIE & FRI OVERSIGT ──────────────────────────────────
 let vacViewEmpDragIdx=null;
 
+
+// ── SERVICE VIEW ──────────────────────────────────────────
+
+function svcDaysLeft(svc){
+  if(!svc.nextDate)return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const next=new Date(svc.nextDate+'T00:00:00');
+  return Math.round((next-today)/(1000*60*60*24));
+}
+
+function svcStatus(svc){
+  const d=svcDaysLeft(svc);
+  if(d===null)return'none';
+  if(d<0)return'over';
+  if(d<=( svc.alarmDays||30))return'warn';
+  return'ok';
+}
+
+function svcStatusLabel(svc){
+  const d=svcDaysLeft(svc);
+  if(d===null)return'Ingen dato';
+  if(d<0)return`Overskredet ${Math.abs(d)} dg`;
+  if(d===0)return'I dag!';
+  if(d<=( svc.alarmDays||30))return`Om ${d} dage`;
+  return`Om ${d} dage`;
+}
+
+function setSvcFilter(f){
+  svcFilter=f;
+  document.querySelectorAll('.svc-ftag').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  renderSvcList();
+}
+
+function svcMatColor(svc){
+  const emp=emps.find(e=>e.id===svc.matId);
+  return emp?emp.color:'#888';
+}
+
+function addDuration(dateStr,val,unit){
+  const d=new Date(dateStr+'T00:00:00');
+  if(unit==='days')d.setDate(d.getDate()+val);
+  else if(unit==='weeks')d.setDate(d.getDate()+val*7);
+  else if(unit==='months')d.setMonth(d.getMonth()+val);
+  else if(unit==='years')d.setFullYear(d.getFullYear()+val);
+  return ky(d);
+}
+
+function renderSvcView(){
+  checkSvcAlarms();
+  renderSvcList();
+  if(selSvcId)renderSvcDetail(selSvcId);
+}
+
+function checkSvcAlarms(){
+  const ind=document.getElementById('svc-alarm-indicator');
+  if(!ind)return;
+  const overdue=serviceItems.filter(s=>svcStatus(s)==='over');
+  const warn=serviceItems.filter(s=>svcStatus(s)==='warn');
+  if(overdue.length){
+    ind.style.display='';
+    ind.textContent=`⛔ ${overdue.length} forfald${overdue.length!==1?'ne':'en'}`;
+  } else if(warn.length){
+    ind.style.display='';
+    ind.style.color='var(--warn)';
+    ind.textContent=`⚠ ${warn.length} forfald${warn.length!==1?'er':'er'} snart`;
+  } else {
+    ind.style.display='none';
+  }
+}
+
+function renderSvcList(){
+  const el=document.getElementById('svc-list');
+  if(!el)return;
+  const mats=emps.filter(e=>e.type==='material'||resourceKind(e)==='material');
+  // Build item list - one entry per serviceItem
+  let items=serviceItems.slice();
+  // Filter
+  if(svcFilter==='overdue')items=items.filter(s=>svcStatus(s)==='over');
+  else if(svcFilter==='soon')items=items.filter(s=>svcStatus(s)==='warn');
+  else if(svcFilter==='ok')items=items.filter(s=>svcStatus(s)==='ok');
+  // Sort: overdue first, then by days left
+  items.sort((a,b)=>{
+    const sa=svcStatus(a),sb=svcStatus(b);
+    const order={over:0,warn:1,ok:2,none:3};
+    if(order[sa]!==order[sb])return order[sa]-order[sb];
+    const da=svcDaysLeft(a)??9999,db=svcDaysLeft(b)??9999;
+    return da-db;
+  });
+
+  el.innerHTML='';
+  const head=document.createElement('div');
+  head.className='svc-list-head';
+  head.textContent=`${items.length} serviceinterval${items.length!==1?'er':''}`;
+  el.appendChild(head);
+
+  if(!items.length){
+    const empty=document.createElement('div');
+    empty.style.cssText='padding:24px 12px;text-align:center;font-size:11px;font-family:"DM Mono",monospace;color:var(--t3)';
+    empty.textContent=serviceItems.length?'Ingen i denne kategori':'Ingen serviceintervaller endnu — klik + Tilføj service';
+    el.appendChild(empty);
+    return;
+  }
+
+  items.forEach(svc=>{
+    const status=svcStatus(svc);
+    const color=svcMatColor(svc);
+    const row=document.createElement('div');
+    row.className='svc-item'+(selSvcId===svc.id?' sel':'');
+    const badgeCls={over:'svc-badge-over',warn:'svc-badge-warn',ok:'svc-badge-ok',none:'svc-badge-none'}[status];
+    row.innerHTML=`
+      <div class="svc-item-dot" style="background:${color}"></div>
+      <div class="svc-item-body">
+        <div class="svc-item-name">${svc.matId} — ${svc.type}</div>
+        <div class="svc-item-sub">${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'Ingen dato sat'}</div>
+      </div>
+      <div class="svc-item-badge ${badgeCls}">${svcStatusLabel(svc)}</div>`;
+    row.addEventListener('click',()=>{
+      selSvcId=svc.id;
+      document.querySelectorAll('.svc-item').forEach(r=>r.classList.remove('sel'));
+      row.classList.add('sel');
+      renderSvcDetail(svc.id);
+    });
+    el.appendChild(row);
+  });
+}
+
+function renderSvcDetail(id){
+  const el=document.getElementById('svc-detail');
+  if(!el)return;
+  const svc=serviceItems.find(s=>s.id===id);
+  if(!svc){el.innerHTML='<div class="svc-detail-empty">Vælg et stykke materiel</div>';return;}
+  const status=svcStatus(svc);
+  const color=svcMatColor(svc);
+  const days=svcDaysLeft(svc);
+  const daysClass=status==='over'?'danger':status==='warn'?'warn':'ok';
+
+  // Timeline: show 6 months back + 12 months ahead
+  const tlHTML=renderSvcTimeline(svc);
+
+  const histHTML=(svc.history||[]).slice().reverse().map(h=>`
+    <div class="svc-hist-row">
+      <span class="svc-hist-date">${h.date.split('-').reverse().join('.')}</span>
+      <span class="svc-hist-note">${h.note||svc.type}</span>
+    </div>`).join('')||'<div style="font-size:11px;color:var(--t3);font-family:\'DM Mono\',monospace">Ingen historik endnu</div>';
+
+  const freqLabel=svc.freqVal?`Hver ${svc.freqVal} ${({days:'dag',weeks:'uge',months:'måned',years:'år'}[svc.freqUnit]||svc.freqUnit)}${svc.freqVal>1?'er':''}`:'—';
+
+  el.innerHTML=`<div class="svc-detail-inner">
+    <div class="svc-detail-header">
+      <div class="svc-detail-dot" style="background:${color}"></div>
+      <div>
+        <div class="svc-detail-title">${svc.matId} — ${svc.type}</div>
+        <div class="svc-detail-sub">${freqLabel}${svc.note?` · ${svc.note}`:''}</div>
+      </div>
+      <button class="btn btn-g" style="margin-left:auto" onclick="openSvcM(${JSON.stringify(id)})">✏ Rediger</button>
+    </div>
+
+    <div class="svc-cards">
+      <div class="svc-card">
+        <div class="svc-card-lbl">Næste service</div>
+        <div class="svc-card-val ${daysClass}">${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'—'}</div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-card-lbl">Dage tilbage</div>
+        <div class="svc-card-val ${daysClass}">${days===null?'—':days<0?`${Math.abs(days)} overskredet`:`${days} dage`}</div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-card-lbl">Frekvens</div>
+        <div class="svc-card-val">${freqLabel}</div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-card-lbl">Sidst udført</div>
+        <div class="svc-card-val">${svc.lastDate?svc.lastDate.split('-').reverse().join('.'):'—'}</div>
+      </div>
+    </div>
+
+    ${tlHTML}
+
+    <div class="svc-section">
+      <div class="svc-section-title">Alarmer</div>
+      <div class="svc-alarm-row">
+        <span style="font-size:14px">${status==='over'?'🔴':status==='warn'?'🟠':'🟢'}</span>
+        <span style="color:var(--t2)">Visuel advarsel</span>
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${svc.alarmDays||30} dage før</span>
+      </div>
+      ${svc.alarmEmail?`<div class="svc-alarm-row">
+        <span style="font-size:14px">📧</span>
+        <span style="color:var(--t2)">E-mail alarm</span>
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3)">${svc.alarmDays||30} dage før</span>
+      </div>`:''}
+    </div>
+
+    <div class="svc-section">
+      <div class="svc-section-title">
+        <span>Historik</span>
+        <span style="color:var(--acc);cursor:pointer;font-size:10px" onclick="openSvcDoneM('${id}')">+ Marker udført</span>
+      </div>
+      ${histHTML}
+    </div>
+
+    <div style="margin-top:8px">
+      <button class="btn btn-p" style="width:100%;justify-content:center" onclick="openSvcDoneM('${id}')">✓ Marker som udført</button>
+    </div>
+  </div>`;
+}
+
+function renderSvcTimeline(svc){
+  if(!svc.nextDate)return'';
+  const today=new Date();today.setHours(0,0,0,0);
+  // Show 3 months back, 9 months ahead
+  const start=new Date(today);start.setMonth(start.getMonth()-3);start.setDate(1);
+  const end=new Date(today);end.setMonth(end.getMonth()+9);end.setDate(1);
+  const totalMs=end-start;
+  const pct=d=>Math.max(0,Math.min(100,((new Date(d+'T00:00:00')-start)/totalMs)*100));
+
+  // Build month headers
+  const months=[];
+  const cur=new Date(start);
+  while(cur<end){
+    months.push(`${cur.getDate()===1?'':''}<div class="svc-tl-month">${['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'][cur.getMonth()]} ${cur.getFullYear()}</div>`);
+    cur.setMonth(cur.getMonth()+1);
+  }
+
+  // Build bars: last done + upcoming occurrences
+  const bars=[];
+  if(svc.lastDate){
+    const ls=pct(svc.lastDate);
+    const le=Math.min(100,pct(svc.nextDate));
+    if(le>ls) bars.push(`<div class="svc-tl-bar past" style="left:${ls.toFixed(1)}%;width:${(le-ls).toFixed(1)}%">${svc.type}</div>`);
+  }
+  // Next + 2 future occurrences
+  let curDate=svc.nextDate;
+  for(let i=0;i<3;i++){
+    if(!curDate)break;
+    const s=pct(curDate);
+    const nextOcc=svc.freqVal?addDuration(curDate,svc.freqVal,svc.freqUnit):null;
+    const e=nextOcc?Math.min(100,pct(nextOcc)):Math.min(100,s+8);
+    if(s>=100)break;
+    const d=svcDaysLeft({nextDate:curDate});
+    const cls=d<0?'over':d<=(svc.alarmDays||30)?'warn':'upcoming';
+    bars.push(`<div class="svc-tl-bar ${cls}" style="left:${s.toFixed(1)}%;width:${Math.max(3,(e-s)).toFixed(1)}%">${svc.type}</div>`);
+    if(!nextOcc)break;
+    curDate=nextOcc;
+  }
+
+  // Today line
+  const todayPct=((today-start)/totalMs)*100;
+  const todayLine=todayPct>=0&&todayPct<=100?`<div class="svc-tl-today" style="left:${todayPct.toFixed(1)}%"></div>`:'';
+
+  // Alarm line
+  let alarmLine='';
+  if(svc.nextDate&&svc.alarmDays){
+    const alarmDate=new Date(svc.nextDate+'T00:00:00');
+    alarmDate.setDate(alarmDate.getDate()-(svc.alarmDays||30));
+    const ap=((alarmDate-start)/totalMs)*100;
+    if(ap>=0&&ap<=100) alarmLine=`<div class="svc-tl-alarm-line" style="left:${ap.toFixed(1)}%" title="Alarmgrænse"></div>`;
+  }
+
+  return`<div class="svc-tl-wrap">
+    <div class="svc-tl-months">${months.join('')}</div>
+    <div class="svc-tl-row">${bars.join('')}${alarmLine}${todayLine}</div>
+  </div>`;
+}
+
+// ── SERVICE MODAL ─────────────────────────────────────────
+function openSvcM(id=null){
+  editSvcId=id;
+  const svc=id?serviceItems.find(s=>s.id===id):null;
+  // Populate material dropdown
+  const sel=document.getElementById('svc-mat-sel');
+  const mats=emps.filter(e=>resourceKind(e)==='material');
+  sel.innerHTML=mats.length
+    ?mats.map(e=>`<option value="${e.id}"${svc&&svc.matId===e.id?' selected':''}>${e.id}</option>`).join('')
+    :'<option value="">— Ingen materiel oprettet endnu —</option>';
+  // Fill fields
+  document.getElementById('svc-type-inp').value=svc?.type||'';
+  document.getElementById('svc-last-date').value=svc?.lastDate||'';
+  document.getElementById('svc-next-date').value=svc?.nextDate||'';
+  document.getElementById('svc-freq-val').value=svc?.freqVal||6;
+  document.getElementById('svc-freq-unit').value=svc?.freqUnit||'months';
+  document.getElementById('svc-alarm-days').value=svc?.alarmDays??30;
+  document.getElementById('svc-alarm-email').checked=svc?.alarmEmail||false;
+  document.getElementById('svc-note-inp').value=svc?.note||'';
+  document.getElementById('svc-modal-title').textContent=svc?'Rediger serviceinterval':'Tilføj serviceinterval';
+  document.getElementById('svc-save-btn').textContent=svc?'Gem':'Tilføj';
+  document.getElementById('svc-del-btn').style.display=svc?'':'none';
+  document.getElementById('mbg-svc').classList.add('on');
+  setTimeout(()=>document.getElementById('svc-type-inp').focus(),50);
+}
+
+function closeSvcM(){document.getElementById('mbg-svc').classList.remove('on');editSvcId=null;}
+
+function saveSvc(){
+  const matId=document.getElementById('svc-mat-sel').value;
+  const type=document.getElementById('svc-type-inp').value.trim();
+  if(!matId||!type){showToast('Udfyld materiel og servicetype','warn');return;}
+  const freqVal=parseInt(document.getElementById('svc-freq-val').value)||6;
+  const freqUnit=document.getElementById('svc-freq-unit').value;
+  const lastDate=document.getElementById('svc-last-date').value||null;
+  let nextDate=document.getElementById('svc-next-date').value||null;
+  // Auto-calc nextDate from lastDate + freq if nextDate empty
+  if(!nextDate&&lastDate&&freqVal) nextDate=addDuration(lastDate,freqVal,freqUnit);
+  const alarmDays=parseInt(document.getElementById('svc-alarm-days').value)||30;
+  const alarmEmail=document.getElementById('svc-alarm-email').checked;
+  const note=document.getElementById('svc-note-inp').value.trim()||null;
+  if(editSvcId){
+    const svc=serviceItems.find(s=>s.id===editSvcId);
+    if(svc){Object.assign(svc,{matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,note});}
+    closeSvcM();saveState();renderSvcView();showToast('Serviceinterval opdateret');
+  } else {
+    const svc={id:`svc${svcSeq++}`,matId,type,lastDate,nextDate,freqVal,freqUnit,alarmDays,alarmEmail,note,history:[]};
+    serviceItems.push(svc);
+    selSvcId=svc.id;
+    closeSvcM();saveState();renderSvcView();showToast(`${type} tilføjet`);
+  }
+}
+
+function deleteSvc(){
+  if(!editSvcId)return;
+  const svc=serviceItems.find(s=>s.id===editSvcId);
+  if(!svc||!confirm(`Slet "${svc.type}" for ${svc.matId}?`))return;
+  serviceItems=serviceItems.filter(s=>s.id!==editSvcId);
+  if(selSvcId===editSvcId)selSvcId=null;
+  closeSvcM();saveState();renderSvcView();showToast('Serviceinterval slettet');
+}
+
+// ── MARKÉR UDFØRT MODAL ───────────────────────────────────
+function openSvcDoneM(id){
+  doneSvcId=id;
+  document.getElementById('svc-done-date').value=ky(new Date());
+  document.getElementById('svc-done-note').value='';
+  document.getElementById('mbg-svc-done').classList.add('on');
+  setTimeout(()=>document.getElementById('svc-done-note').focus(),50);
+}
+function closeSvcDoneM(){document.getElementById('mbg-svc-done').classList.remove('on');doneSvcId=null;}
+function confirmSvcDone(){
+  const svc=serviceItems.find(s=>s.id===doneSvcId);
+  if(!svc)return;
+  const date=document.getElementById('svc-done-date').value;
+  const note=document.getElementById('svc-done-note').value.trim();
+  if(!date){showToast('Vælg en dato','warn');return;}
+  if(!svc.history)svc.history=[];
+  svc.history.push({date,note:note||svc.type});
+  svc.lastDate=date;
+  if(svc.freqVal) svc.nextDate=addDuration(date,svc.freqVal,svc.freqUnit);
+  closeSvcDoneM();
+  saveState();
+  renderSvcView();
+  showToast(`${svc.type} markeret som udført — næste: ${svc.nextDate?svc.nextDate.split('-').reverse().join('.'):'?'}`);
+}
+
 function renderVacView(days,cfg){
   const sb=document.getElementById('vac-sb-rows');
   const gantt=document.getElementById('vac-gantt');
@@ -4750,7 +5247,7 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowRight')shiftP(1);
   }
 });
-['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep'].forEach(id=>{
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep','mbg-svc','mbg-svc-done'].forEach(id=>{
   const el=document.getElementById(id);
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')});
   const modal=el.querySelector('.modal');
@@ -4763,7 +5260,7 @@ const _mbgObserver=new MutationObserver(()=>{
   if(anyOpen&&popup.classList.contains('show')){closePopup();}
   if(anyOpen)hideCmtTooltip();
 });
-['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep'].forEach(id=>{
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep','mbg-svc','mbg-svc-done'].forEach(id=>{
   _mbgObserver.observe(document.getElementById(id),{attributeFilter:['class']});
 });
 document.addEventListener('click',e=>{
@@ -4801,10 +5298,10 @@ function loadState(){
 
 function statePayload(){
   return {
-    emps,projs,tasks,comments,vacations,teams,specialDays,
+    emps,projs,tasks,comments,vacations,teams,specialDays,serviceItems,
     collapsed:[...collapsed],
     internalOrder,internalColorId,
-    pseq,tseq,cseq,vacSeq,teamSeq
+    pseq,tseq,cseq,vacSeq,teamSeq,svcSeq
   };
 }
 
@@ -4821,6 +5318,7 @@ function applyPayload(d){
   if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
   if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
   if(d.specialDays){specialDays=d.specialDays}
+  if(d.serviceItems){serviceItems=d.serviceItems;svcSeq=d.svcSeq||svcSeq}
   if(d.collapsed){collapsed=new Set(d.collapsed)}
   if(d.internalOrder!==undefined){internalOrder=d.internalOrder}
   if(d.internalColorId){internalColorId=d.internalColorId}
