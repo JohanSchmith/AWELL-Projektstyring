@@ -3082,14 +3082,16 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
-  // Compute the date under the cursor fresh each time (avoids stale-closure issues).
-  // timelineDays()[i] is the date at pixel i*dw – same array used to render bars.
+  // Delta-based drag: record mouse position at drag-start, compute day-delta on move.
+  // This avoids all coordinate-system issues — only the relative movement matters.
+  const dragStartX=e.clientX;
+  const dragStartScrollLeft=wrap.scrollLeft;
   const getDayAtX=(clientX)=>{
-    const freshDays=timelineDays(cfg);
-    const wr=wrap.getBoundingClientRect();
-    const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
-    const idx=Math.max(0,Math.min(freshDays.length-1,Math.floor(mouseXInGantt/cfg.dw)));
-    return ky(freshDays[idx]);
+    // How many pixels has the mouse moved horizontally since drag-start?
+    // Also account for any scrolling that happened during drag.
+    const dxPixels=(clientX-dragStartX)+(wrap.scrollLeft-dragStartScrollLeft);
+    const dayDelta=Math.round(dxPixels/cfg.dw);
+    return ky(add(pd(origStart),dayDelta));
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
