@@ -3076,7 +3076,7 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   const origStart=task.startDate;
   const origEnd=task.endDate;
   flipDragDidMove=false;
-  const dur=daysBetween(origStart,origEnd);
+  const dur=Math.max(0,daysBetween(origStart,origEnd));  // guard against corrupted data
   const wrap=document.getElementById(wrapId||'flip-gantt-wrap');
   const ghost=document.createElement('div');
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
@@ -3087,10 +3087,9 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   const dragStartX=e.clientX;
   const dragStartScrollLeft=wrap.scrollLeft;
   const getDayAtX=(clientX)=>{
-    // How many pixels has the mouse moved horizontally since drag-start?
-    // Also account for any scrolling that happened during drag.
+    const liveDw=getZoomConfig().dw;  // always fresh — matches current bar widths
     const dxPixels=(clientX-dragStartX)+(wrap.scrollLeft-dragStartScrollLeft);
-    const dayDelta=Math.round(dxPixels/cfg.dw);
+    const dayDelta=Math.round(dxPixels/liveDw);
     return ky(add(pd(origStart),dayDelta));
   };
   const onMove=ev=>{
@@ -3127,6 +3126,7 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
       });
     });
     const doApply=()=>{
+      if(ne<ns){return;}  // sanity guard — should never happen
       t.startDate=ns;t.endDate=ne;
       if(toEmpId&&toEmpId!==fromEmpId){
         t.staff=t.staff.filter(x=>x!==fromEmpId);
@@ -3327,6 +3327,7 @@ function saveTask(){
   const s=document.getElementById('tm-s').value;
   const e=document.getElementById('tm-e').value;
   if(!name||!s||!e)return;
+  if(e<s){alert('Slutdato kan ikke være før startdato');return;}
 
   // ── Konflikt-tjek ──
   const conflictingEmps=[];
@@ -3947,7 +3948,11 @@ function importData(input){
       if(!confirm(`Importér data fra ${file.name}?\nDette erstatter din nuværende opsætning.`)){input.value='';return}
       if(d.emps)emps=d.emps;
       if(d.projs){projs=d.projs;pseq=d.pseq||pseq}
-      if(d.tasks){tasks=d.tasks;tseq=d.tseq||tseq}
+      if(d.tasks){
+    tasks=d.tasks;tseq=d.tseq||tseq;
+    // Repair: fix any tasks where endDate < startDate (from drag bug)
+    tasks.forEach(t=>{if(t.endDate<t.startDate)t.endDate=t.startDate;});
+  }
       if(d.comments){comments=d.comments;cseq=d.cseq||cseq}
       if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
       if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
@@ -4044,7 +4049,11 @@ function applyPayload(d){
   if(!d)return;
   if(d.emps&&d.emps.length){emps=d.emps}
   if(d.projs){projs=d.projs;pseq=d.pseq||pseq}
-  if(d.tasks){tasks=d.tasks;tseq=d.tseq||tseq}
+  if(d.tasks){
+    tasks=d.tasks;tseq=d.tseq||tseq;
+    // Repair: fix any tasks where endDate < startDate (from drag bug)
+    tasks.forEach(t=>{if(t.endDate<t.startDate)t.endDate=t.startDate;});
+  }
   if(d.comments){comments=d.comments;cseq=d.cseq||cseq}
   if(d.vacations){vacations=d.vacations;vacSeq=d.vacSeq||vacSeq}
   if(d.teams){teams=d.teams;teamSeq=d.teamSeq||teamSeq}
