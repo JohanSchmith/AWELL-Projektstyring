@@ -907,6 +907,19 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
   </div>
 </div>
 
+
+<!-- DEP CONFIRM MODAL -->
+<div class="mbg" id="mbg-dep" style="z-index:800">
+  <div class="modal" style="max-width:380px">
+    <h3 id="dep-modal-title" style="font-size:15px;margin-bottom:10px">Tilkoblede opgaver</h3>
+    <div id="dep-modal-body" style="font-size:12px;color:var(--t2);margin-bottom:16px;line-height:1.7"></div>
+    <div class="m-acts">
+      <button class="btn btn-g" id="dep-cancel-btn">Kun denne opgave</button>
+      <button class="btn btn-p" id="dep-confirm-btn">Ryk tilkoblede med</button>
+    </div>
+  </div>
+</div>
+
 <!-- COLOR PICKER -->
 <div class="cpick" id="cpick"></div>
 
@@ -2972,6 +2985,38 @@ function renderPopBody(){
         <div class="pop-row"><span class="pop-lbl">Slut</span><span class="pop-val">${fmtDate(task.endDate)}</span></div>
         <div class="pop-row"><span class="pop-lbl">Varighed</span><span class="pop-val">${wd} arbejdsdag${wd!==1?'e':''}</span></div>
         ${cfMsg?`<div class="pop-conflict">⚠ ${escHtml(cfMsg)}</div>`:''}`;
+      // Dependency row
+      const depRow=document.createElement('div');depRow.className='pop-row';depRow.style.marginTop='8px';depRow.style.flexDirection='column';depRow.style.alignItems='flex-start';depRow.style.gap='5px';
+      const depLbl=document.createElement('span');depLbl.className='pop-lbl';depLbl.textContent='Efterfølger';depRow.appendChild(depLbl);
+      const depVal=document.createElement('div');depVal.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%';
+      if(task.sucId){
+        const suc=taskBy(task.sucId);
+        const chip=document.createElement('span');chip.className='dep-chip';
+        chip.innerHTML=`<span class="dep-arrow">→</span> ${escHtml(suc?suc.name:'[slettet]')}<span class="dep-x" title="Fjern kobling">×</span>`;
+        chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
+        depVal.appendChild(chip);
+      } else {
+        const sel=document.createElement('select');sel.className='dep-select';
+        sel.innerHTML='<option value="">+ Tilføj efterfølger…</option>'+tasks.filter(t=>t.id!==task.id&&t.id!==task.sucId).map(t=>`<option value="${t.id}">${escHtml(t.name)}</option>`).join('');
+        sel.addEventListener('change',()=>{if(sel.value){task.sucId=parseInt(sel.value);saveState();refreshPopup();showToast('Kobling oprettet');}});
+        depVal.appendChild(sel);
+      }
+      depRow.appendChild(depVal);
+      // Also show predecessors (tasks that point to this task)
+      const preds=tasks.filter(t=>t.sucId===task.id);
+      if(preds.length){
+        const predDiv=document.createElement('div');predDiv.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px';
+        preds.forEach(p=>{
+          const chip=document.createElement('span');chip.className='dep-chip';
+          chip.innerHTML=`<span style="font-size:9px;color:var(--t3)">foregår før</span> <span class="dep-arrow">→</span> ${escHtml(p.name)}`;
+          predDiv.appendChild(chip);
+        });
+        const predLbl=document.createElement('span');predLbl.className='pop-lbl';predLbl.textContent='Foregås af';
+        const predRow=document.createElement('div');predRow.className='pop-row';predRow.style.marginTop='2px';predRow.style.flexDirection='column';predRow.style.alignItems='flex-start';predRow.style.gap='5px';
+        predRow.appendChild(predLbl);predRow.appendChild(predDiv);
+        div.appendChild(predRow);
+      }
+      div.appendChild(depRow);
     } else {
       const proj=projBy(popTarget.id);if(!proj)return;
       const ps=projStart(proj.id),pe=projEnd(proj.id);
@@ -3233,13 +3278,14 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
     });
     const doApply=()=>{
       if(ne<ns){return;}
+      const oldStart=t.startDate;
       t.startDate=ns;t.endDate=ne;
       if(toEmpId&&toEmpId!==fromEmpId){
         t.staff=t.staff.filter(x=>x!==fromEmpId);
         if(!t.staff.includes(toEmpId))t.staff.push(toEmpId);
         showToast(fromEmpId+' → '+toEmpId);
       }
-      computeConflicts();render();saveState();
+      applyDepShift(t.id,oldStart,ns,()=>{computeConflicts();render();saveState();});
     };
     if(conflictMsgs.length){
       t.startDate=origStart;t.endDate=origEnd;
@@ -3418,6 +3464,50 @@ function hideCmtTooltip(){
   },150);
 }
 
+// ── TASK DEPENDENCIES ────────────────────────────────────
+// task.sucId = id of successor task (Finish-to-Start link)
+// Moving a task forward offers to move its chain of successors too.
+// Moving backward never shifts predecessors (historical record).
+
+function getDepChain(taskId,visited=new Set()){
+  if(visited.has(taskId))return [];
+  visited.add(taskId);
+  const t=taskBy(taskId);
+  if(!t||!t.sucId)return [];
+  const suc=taskBy(t.sucId);
+  if(!suc)return [];
+  return [suc,...getDepChain(t.sucId,visited)];
+}
+
+function applyDepShift(movedTaskId,oldStart,newStart,callback){
+  const delta=daysBetween(oldStart,newStart);
+  if(delta===0){callback();return;}
+  const chain=getDepChain(movedTaskId);
+  if(!chain.length||delta<0){callback();return;}
+  const names=chain.map(t=>`<strong>${escHtml(t.name)}</strong>`).join(' → ');
+  document.getElementById('dep-modal-body').innerHTML=
+    `Vil du rykke ${chain.length===1?'den tilkoblede opgave':'de tilkoblede opgaver'} <strong>${delta} dag${delta!==1?'e':''} frem</strong>?<br><br>${names}`;
+  const modal=document.getElementById('mbg-dep');
+  modal.classList.add('on');
+  const confirmBtn=document.getElementById('dep-confirm-btn');
+  const cancelBtn=document.getElementById('dep-cancel-btn');
+  const cleanup=()=>{
+    modal.classList.remove('on');
+    confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+    cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  };
+  document.getElementById('dep-confirm-btn').addEventListener('click',()=>{
+    cleanup();
+    chain.forEach(t=>{
+      t.startDate=ky(add(pd(t.startDate),delta));
+      t.endDate=ky(add(pd(t.endDate),delta));
+    });
+    callback();
+  },{once:true});
+  document.getElementById('dep-cancel-btn').addEventListener('click',()=>{cleanup();callback();},{once:true});
+}
+
+
 // ── RESIZE ────────────────────────────────────────────────
 function startRz(e,task,side,days,cfg){
   e.preventDefault();
@@ -3428,7 +3518,14 @@ function startRz(e,task,side,days,cfg){
     else{const ns=ky(add(pd(rzStartDate),delta));if(ns<rzTask.endDate)rzTask.startDate=ns}
     renderGantt(days,cfg);
   };
-  const onUp=()=>{rzTask=null;document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);computeConflicts();renderPalette();if(popTarget?.id===task.id)refreshPopup()};
+  const rzOldStart=task.startDate;
+  const onUp=()=>{
+    const moved=rzTask;rzTask=null;
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+    computeConflicts();renderPalette();if(popTarget?.id===task.id)refreshPopup();
+    if(moved&&rzSide==='r')applyDepShift(moved.id,rzOldStart,moved.startDate,()=>{computeConflicts();render();saveState();});
+    else saveState();
+  };
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
 }
 
@@ -3629,7 +3726,14 @@ function _doSaveTask(name,pid,s,e){
 
   if(editTid){
     const t=taskBy(editTid);
-    if(t){t.name=name;t.projId=pid;t.startDate=s;t.endDate=e;t.staff=tmStaff;}
+    if(t){
+      const oldStart=t.startDate;
+      t.name=name;t.projId=pid;t.startDate=s;t.endDate=e;t.staff=tmStaff;
+      closeTaskM();computeConflicts();render();
+      applyDepShift(t.id,oldStart,s,()=>{computeConflicts();render();saveState();});
+      showToast('Opgave opdateret');
+      return;
+    }
     showToast('Opgave opdateret');
   }else{
     tasks.push({id:tseq++,projId:pid,name,startDate:s,endDate:e,staff:[...tmStaff]});
@@ -4275,7 +4379,7 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowRight')shiftP(1);
   }
 });
-['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt'].forEach(id=>{
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep'].forEach(id=>{
   const el=document.getElementById(id);
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')});
   const modal=el.querySelector('.modal');
@@ -4288,7 +4392,7 @@ const _mbgObserver=new MutationObserver(()=>{
   if(anyOpen&&popup.classList.contains('show')){closePopup();}
   if(anyOpen)hideCmtTooltip();
 });
-['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt'].forEach(id=>{
+['mbg-proj','mbg-task','mbg-emp','mbg-vac','mbg-auth','mbg-cmt','mbg-dep'].forEach(id=>{
   _mbgObserver.observe(document.getElementById(id),{attributeFilter:['class']});
 });
 document.addEventListener('click',e=>{
