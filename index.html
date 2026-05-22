@@ -3583,9 +3583,8 @@ function startDepPick(taskId,type){
       if(!e.target.closest('.popup'))cancelDepPick();
       return;
     }
-    // Absorb the click that will follow this mousedown
+    // Absorb only the single click that immediately follows this mousedown
     const absorbClick=ev=>{ev.stopImmediatePropagation();ev.preventDefault();ev.stopPropagation();};
-    bar.addEventListener('click',absorbClick,{capture:true,once:true});
     document.addEventListener('click',absorbClick,{capture:true,once:true});
     e.stopImmediatePropagation();e.preventDefault();e.stopPropagation();
     const pickedId=parseInt(bar.dataset.tid);
@@ -3615,6 +3614,8 @@ function cancelDepPick(){
 }
 
 function finishDepPick(){
+  _depPickTaskId=null; // clear FIRST so guards in bar handlers stop blocking
+  _depPickType=null;
   document.getElementById('popup').style.opacity='';
   document.getElementById('popup').style.pointerEvents='';
   document.getElementById('gantt')?.classList.remove('dep-pick-mode');
