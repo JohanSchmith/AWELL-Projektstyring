@@ -572,7 +572,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-pick-mode [data-tid]{cursor:pointer!important;transition:filter .1s}
 .dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
 .dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'DM Mono',monospace;font-weight:700;border:1.5px solid;max-width:180px;color:#111}
+.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'DM Mono',monospace;font-weight:400;border:1.5px solid;max-width:180px;color:#111}
 .dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dep-x{cursor:pointer;opacity:.6;font-size:13px;line-height:1;flex-shrink:0;margin-left:2px}
 .dep-x:hover{opacity:1}
@@ -3633,11 +3633,9 @@ function startDepPick(taskId,type){
       if(chain.find(t=>t.id===pickedId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
       const t=taskBy(pickedId);if(t)t.sucId=_depPickTaskId;
     }
-    const reopenId=taskId;
     saveState();computeConflicts();render();
     finishDepPick();
     showToast('Kobling oprettet');
-    setTimeout(()=>openPopup('task',reopenId,null),30);
   };
   document.addEventListener('mousedown',_depPickClick,{capture:true});
 }
