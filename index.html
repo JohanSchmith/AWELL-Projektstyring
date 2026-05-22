@@ -2943,12 +2943,11 @@ function buildPopup(e){
   if(isTask){
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="popEdit()">✏️ Rediger</button>
-      <button class="pop-btn-e" onclick="setPopTab('comments')" title="Kommentarer" style="flex:0;padding:5px 10px">${ccnt?`💬 ${ccnt}`:'💬'}</button>
       <button class="pop-btn-d" onclick="popDelete()">✕ Slet</button>`;
   } else {
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="openProjEdit(${item.id})">✏️ Rediger</button>
-      <button class="pop-btn-e" onclick="setPopTab('comments')" title="Kommentarer" style="flex:0;padding:5px 10px">${ccnt?`💬 ${ccnt}`:'💬'}</button>
+
       <button class="pop-btn-a" onclick="openTaskM(${item.id});closePopup()">+ Opgave</button>
       <button class="pop-btn-d" onclick="popDeleteProj()">✕ Slet</button>`;
   }
@@ -2973,12 +2972,11 @@ function setPopTab(tab){
   if(isTask){
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="popEdit()">✏️ Rediger</button>
-      <button class="pop-btn-e" onclick="setPopTab('comments')" title="Kommentarer" style="flex:0;padding:5px 10px">${ccnt?`💬 ${ccnt}`:'💬'}</button>
       <button class="pop-btn-d" onclick="popDelete()">✕ Slet</button>`;
   } else {
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="openProjEdit(${item.id})">✏️ Rediger</button>
-      <button class="pop-btn-e" onclick="setPopTab('comments')" title="Kommentarer" style="flex:0;padding:5px 10px">${ccnt?`💬 ${ccnt}`:'💬'}</button>
+
       <button class="pop-btn-a" onclick="openTaskM(${item.id});closePopup()">+ Opgave</button>
       <button class="pop-btn-d" onclick="popDeleteProj()">✕ Slet</button>`;
   }
@@ -3010,9 +3008,11 @@ function renderPopBody(){
       if(task.sucId){
         const suc=taskBy(task.sucId);
         const sucProj=suc?.projId?projBy(suc.projId):null;
-        const sucCol=sucProj?pcm[sucProj.colorId]?.tx:'#9898b2';
+        const sucC=sucProj?pcm[sucProj.colorId]:null;
+        const sucBg=sucC?sucC.bg:'#2a2a3a';
+        const sucTx=sucC?sucC.tx:'#9898b2';
         const chip=document.createElement('span');chip.className='dep-chip';
-        chip.style.cssText=`background:${sucCol}22;border-color:${sucCol}44;color:${sucCol}`;
+        chip.style.cssText=`background:${sucBg};border-color:${sucTx}66;color:${sucTx}`;
         chip.innerHTML=`<span class="dep-chip-name">${escHtml(suc?suc.name:'[slettet]')}</span><span class="dep-x" title="Fjern kobling">×</span>`;
         chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
         sucRow.appendChild(chip);
@@ -3033,9 +3033,11 @@ function renderPopBody(){
         const predChips=document.createElement('div');predChips.style.cssText='display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end';
         preds.forEach(p=>{
           const pProj=p.projId?projBy(p.projId):null;
-          const pCol=pProj?pcm[pProj.colorId]?.tx:'#9898b2';
+          const pC=pProj?pcm[pProj.colorId]:null;
+          const pBg=pC?pC.bg:'#2a2a3a';
+          const pTx=pC?pC.tx:'#9898b2';
           const chip=document.createElement('span');chip.className='dep-chip';
-          chip.style.cssText=`background:${pCol}22;border-color:${pCol}44;color:${pCol}`;
+          chip.style.cssText=`background:${pBg};border-color:${pTx}66;color:${pTx}`;
           chip.innerHTML=`<span class="dep-chip-name">${escHtml(p.name)}</span><span class="dep-x" title="Fjern kobling">×</span>`;
           chip.querySelector('.dep-x').addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
           predChips.appendChild(chip);
@@ -3556,13 +3558,10 @@ function hideCmtTooltip(){
 let _depPickTaskId=null,_depPickType=null,_depPickBanner=null,_depPickEsc=null,_depPickClick=null;
 
 function startDepPick(taskId,type){
-  // type: 'suc' = picking the successor of taskId
-  //       'pre' = picking the predecessor of taskId (the one that must finish first)
   _depPickTaskId=taskId;
   _depPickType=type;
-  // Hide popup temporarily
-  document.getElementById('popup').style.opacity='0.15';
-  document.getElementById('popup').style.pointerEvents='none';
+  // Close popup entirely during pick — reopen after
+  closePopup();
   // Add pick-mode class to gantt
   document.getElementById('gantt')?.classList.add('dep-pick-mode');
   document.getElementById('flip-gantt')?.classList.add('dep-pick-mode');
@@ -3598,26 +3597,25 @@ function startDepPick(taskId,type){
       if(chain.find(t=>t.id===pickedId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
       const t=taskBy(pickedId);if(t)t.sucId=_depPickTaskId;
     }
+    const reopenId=taskId;
     saveState();computeConflicts();render();
     finishDepPick();
     showToast('Kobling oprettet');
+    setTimeout(()=>openPopup('task',reopenId,null),30);
   };
   document.addEventListener('mousedown',_depPickClick,{capture:true});
 }
 
 function cancelDepPick(){
+  const tid=_depPickTaskId; // save before finishDepPick clears it
   finishDepPick();
-  // Restore popup
-  const tid=_depPickTaskId;
-  _depPickTaskId=null;
-  if(popTarget?.id===tid)refreshPopup();
+  // Reopen popup on the original task
+  if(tid)setTimeout(()=>openPopup('task',tid,null),30);
 }
 
 function finishDepPick(){
   _depPickTaskId=null; // clear FIRST so guards in bar handlers stop blocking
   _depPickType=null;
-  document.getElementById('popup').style.opacity='';
-  document.getElementById('popup').style.pointerEvents='';
   document.getElementById('gantt')?.classList.remove('dep-pick-mode');
   document.getElementById('flip-gantt')?.classList.remove('dep-pick-mode');
   if(_depPickBanner&&_depPickBanner.parentNode)_depPickBanner.parentNode.removeChild(_depPickBanner);
