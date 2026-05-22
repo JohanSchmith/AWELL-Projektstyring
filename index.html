@@ -215,7 +215,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .g-cell.special{background:rgba(255,200,50,.07)}
 .holiday-tag{position:absolute;top:0;left:0;right:0;font-size:7px;font-family:'DM Mono',monospace;color:#ff9090;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;line-height:10px;pointer-events:none}
 .special-tag{position:absolute;top:0;left:0;right:0;font-size:7px;font-family:'DM Mono',monospace;color:#ffcc33;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;line-height:10px;pointer-events:none}
-.today-line{display:none}
+.today-line{position:absolute;top:0;bottom:0;width:2px;background:#ffe44d;opacity:.7;z-index:4;pointer-events:none;border-radius:1px}
 .hold-stripe{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,159,67,.06) 4px,rgba(255,159,67,.06) 8px);pointer-events:none;z-index:1;border-left:2px solid var(--warn);border-right:2px solid var(--warn)}
 
 /* ── GANTT BARS ── */
@@ -385,11 +385,11 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .mw-fb.on{border-color:transparent}
 .mw-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;flex:1}
 .mw-dc{background:var(--s1);border:1px solid var(--b1);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.mw-dc.td{border-color:var(--acc)}
+.mw-dc.td{border-color:#ffe44d}
 .mw-dh{padding:9px 12px 7px;border-bottom:1px solid var(--b1);display:flex;align-items:baseline;gap:7px}
 .mw-dk{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
 .mw-dn{font-size:18px;font-weight:800}
-.mw-dc.td .mw-dn{color:var(--acc)}
+.mw-dc.td .mw-dn{color:#ffe44d}
 .mw-db{padding:6px;flex:1;overflow-y:auto}
 .mw-db::-webkit-scrollbar{display:none}
 .mw-group{margin-bottom:7px}
@@ -570,7 +570,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 :root.light .svc-bar.upcoming{color:#1a3a8a}
 :root.light .svc-bar.warn{color:#92400e}
 :root.light .svc-bar.over{color:#b91c1c}
-.svc-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:4;pointer-events:none}
+.svc-today-line{position:absolute;top:0;bottom:0;width:2px;background:#ffe44d;opacity:.7;z-index:4;pointer-events:none;border-radius:1px}
 .svc-alarm-line{position:absolute;top:0;bottom:0;width:1px;background:var(--warn);opacity:.45;z-index:3;pointer-events:none}
 .svc-detail-panel{width:280px;flex-shrink:0;border-left:1px solid var(--b1);overflow-y:auto;background:var(--bg)}
 .svc-detail{flex:1;overflow-y:auto;background:var(--bg)}
@@ -605,7 +605,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .svc-tl-bar.upcoming{background:#5b8fff22;border:1px solid #5b8fff55;color:#5b8fff}
 .svc-tl-bar.warn{background:#ff9f4322;border:1px solid #ff9f4366;color:var(--warn)}
 .svc-tl-bar.over{background:#ff5e5e22;border:1px solid #ff5e5e66;color:var(--danger)}
-.svc-tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);border-radius:1px;z-index:3}
+.svc-tl-today{position:absolute;top:0;bottom:0;width:2px;background:#ffe44d;opacity:.7;border-radius:1px;z-index:3}
 .svc-tl-alarm-line{position:absolute;top:0;bottom:0;width:1px;background:var(--warn);opacity:.6;z-index:2}
 :root.light .svc-tl-bar.past{color:#065f46}
 :root.light .svc-tl-bar.upcoming{color:#1e3a8a}
@@ -878,8 +878,6 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
       <button class="nb" onclick="svcNavToday()">I dag</button>
     </div>
     <div style="display:flex;background:var(--s3);border-radius:7px;padding:2px;gap:2px">
-      <button class="vm" id="svc-zm-day"   onclick="setSvcZoom('day')">Dag</button>
-      <button class="vm" id="svc-zm-week"  onclick="setSvcZoom('week')">Uge</button>
       <button class="vm on" id="svc-zm-month" onclick="setSvcZoom('month')">Måned</button>
       <button class="vm" id="svc-zm-year"  onclick="setSvcZoom('year')">År</button>
     </div>
@@ -4370,7 +4368,7 @@ function setSvcZoom(z){
   svcZoom=z;
   const newCfg=svcZoomCfg();
   svcInitGanttStart();
-  ['day','week','month','year'].forEach(k=>document.getElementById('svc-zm-'+k)?.classList.toggle('on',k===z));
+  ['month','year'].forEach(k=>document.getElementById('svc-zm-'+k)?.classList.toggle('on',k===z));
   renderSvcView();
   requestAnimationFrame(()=>{
     const w=document.getElementById('svc-gantt-wrap');
@@ -4431,7 +4429,11 @@ function updateSvcPeriodLabel(){
   } else if(svcZoom==='month'){
     lbl.textContent=`${DKMs[leftDate.getMonth()]} ${leftDate.getFullYear()} – ${DKMs[rightDate.getMonth()]} ${rightDate.getFullYear()}`;
   } else {
-    lbl.textContent=`${leftDate.getFullYear()} – ${rightDate.getFullYear()}`;
+    if(leftDate.getFullYear()===rightDate.getFullYear()){
+      lbl.textContent=`${leftDate.getFullYear()}`;
+    } else {
+      lbl.textContent=`${leftDate.getFullYear()} – ${rightDate.getFullYear()}`;
+    }
   }
 }
 
@@ -4649,29 +4651,42 @@ function renderSvcGantt(){
       const mn2=new Date(mo2);mn2.setMonth(mn2.getMonth()+1);
       const me=Math.min(totalW,Math.round((mn2-start)/864e5)*DW);
       const isCurrentMo=today.getMonth()===mo2.getMonth()&&today.getFullYear()===mo2.getFullYear();
-      headHTML+=`<div style="position:absolute;left:${ms}px;width:${me-ms}px;top:20px;height:36px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;${isCurrentMo?'background:rgba(91,143,255,.08)':''}">
-        <span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:${isCurrentMo?'var(--acc)':'var(--t2)'};white-space:nowrap">${DKMs[mo2.getMonth()]}</span>
+      headHTML+=`<div style="position:absolute;left:${ms}px;width:${me-ms}px;top:20px;height:36px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;${isCurrentMo?'background:rgba(255,228,77,.06)':''}">
+        <span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:${isCurrentMo?'#ffe44d':'var(--t2)'};white-space:nowrap">${DKMs[mo2.getMonth()]}</span>
       </div>`;
       mo2.setMonth(mo2.getMonth()+1);
     }
   } else { // year
-    // Top row: decades or blank. Bottom row: years
+    // Top row: year bands. Bottom row: month ticks
     const yr2=new Date(start);yr2.setMonth(0);yr2.setDate(1);
     while(yr2<end){
       const ys=Math.round((yr2-start)/864e5)*DW;
       const yn=new Date(yr2);yn.setFullYear(yn.getFullYear()+1);
       const ye=Math.min(totalW,Math.round((yn-start)/864e5)*DW);
       const isCurrentYr=today.getFullYear()===yr2.getFullYear();
-      headHTML+=`<div style="position:absolute;left:${Math.max(0,ys)}px;width:${ye-Math.max(0,ys)}px;top:0;height:56px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;${isCurrentYr?'background:rgba(91,143,255,.08)':''}">
-        <span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:700;color:${isCurrentYr?'var(--acc)':'var(--t2)'}">${yr2.getFullYear()}</span>
+      headHTML+=`<div style="position:absolute;left:${Math.max(0,ys)}px;width:${ye-Math.max(0,ys)}px;top:0;height:24px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;padding-left:6px;${isCurrentYr?'background:rgba(255,228,77,.06)':''}">
+        <span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:${isCurrentYr?'#ffe44d':'var(--t2)'}">${yr2.getFullYear()}</span>
       </div>`;
       yr2.setFullYear(yr2.getFullYear()+1);
+    }
+    // Month ticks in bottom row
+    const mo3=new Date(start);mo3.setDate(1);
+    while(mo3<end){
+      const ms3=Math.round((mo3-start)/864e5)*DW;
+      const mn3=new Date(mo3);mn3.setMonth(mn3.getMonth()+1);
+      const me3=Math.min(totalW,Math.round((mn3-start)/864e5)*DW);
+      const isCurrentMo3=today.getMonth()===mo3.getMonth()&&today.getFullYear()===mo3.getFullYear();
+      const wid=me3-ms3;
+      headHTML+=`<div style="position:absolute;left:${ms3}px;width:${wid}px;top:24px;height:32px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;${isCurrentMo3?'background:rgba(255,228,77,.06)':''}">
+        ${wid>16?`<span style="font-size:9px;font-family:'DM Mono',monospace;color:${isCurrentMo3?'#ffe44d':'var(--t3)'};white-space:nowrap">${DKMs[mo3.getMonth()].substring(0,3)}</span>`:''}
+      </div>`;
+      mo3.setMonth(mo3.getMonth()+1);
     }
   }
 
   // Today line in header
   if(todayPx>=0&&todayPx<=totalW){
-    headHTML+=`<div style="position:absolute;left:${todayPx}px;top:0;bottom:0;width:2px;background:var(--acc);z-index:5;pointer-events:none"></div>`;
+    headHTML+=`<div style="position:absolute;left:${todayPx}px;top:0;bottom:0;width:2px;background:#ffe44d;opacity:.7;z-index:5;pointer-events:none;border-radius:1px"></div>`;
   }
   headHTML+='</div>';
   headEl.innerHTML=headHTML;
@@ -4695,7 +4710,7 @@ function renderSvcGantt(){
         const isWknd=d2.getDay()===0||d2.getDay()===6;
         const isTd=d2.getTime()===today.getTime();
         const col=document.createElement('div');
-        col.style.cssText=`position:absolute;left:${px}px;width:${DW}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${isWknd?'background:rgba(255,255,255,.03)':''}${isTd?';background:rgba(91,143,255,.06)':''}`;
+        col.style.cssText=`position:absolute;left:${px}px;width:${DW}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${isWknd?'background:rgba(255,255,255,.03)':''}${isTd?';background:rgba(255,228,77,.07)':''}`;
         bg.appendChild(col);
         d2.setDate(d2.getDate()+1);
       }
@@ -4709,7 +4724,7 @@ function renderSvcGantt(){
         const wpx=Math.min(totalW,Math.round((wEnd-start)/864e5)*DW);
         const isCurrentWk=today>=d2&&today<wEnd;
         const col=document.createElement('div');
-        col.style.cssText=`position:absolute;left:${px}px;width:${wpx-px}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${isCurrentWk?'background:rgba(91,143,255,.05)':wi%2===1?'background:rgba(255,255,255,.02)':''}`;
+        col.style.cssText=`position:absolute;left:${px}px;width:${wpx-px}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${isCurrentWk?'background:rgba(255,228,77,.05)':wi%2===1?'background:rgba(255,255,255,.02)':''}`;
         bg.appendChild(col);
         d2.setDate(d2.getDate()+7);wi++;
       }
@@ -5118,7 +5133,7 @@ function renderVacView(days,cfg){
     days.forEach((d,i)=>{
       if(isWk(d)||ky(d)===today){
         const shade=document.createElement('div');
-        shade.style.cssText=`position:absolute;top:0;bottom:0;left:${i*dw}px;width:${dw}px;${ky(d)===today?'background:rgba(91,143,255,.06)':'background:var(--s2)'};pointer-events:none`;
+        shade.style.cssText=`position:absolute;top:0;bottom:0;left:${i*dw}px;width:${dw}px;${ky(d)===today?'background:rgba(255,228,77,.07)':'background:var(--s2)'};pointer-events:none`;
         row.appendChild(shade);
       }
     });
