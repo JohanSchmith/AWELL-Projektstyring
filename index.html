@@ -13,7 +13,7 @@
   --b1:#323240;--b2:#46465a;--b3:#5d5d73;
   --t1:#ebebf4;--t2:#c8cadb;--t3:#9ca2c2;
   --acc:#5b8fff;--warn:#ff9f43;--danger:#ff5e5e;
-  --pop-action-text:var(--t1);--dep-chip-text:var(--t1);--soft-danger-text:#ff8a8a;--chip-weight:600;
+  --pop-action-text:var(--t1);--dep-chip-text:var(--t1);--soft-danger-text:#ff8a8a;--chip-weight:500;
   --row-h:44px;--task-h:36px;--label-w:240px;--head-h:56px;
 }
 :root.light{
@@ -594,7 +594,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-pick-mode [data-tid]{cursor:pointer!important;transition:filter .1s}
 .dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
 .dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'Syne',sans-serif;font-weight:600;border:1.5px solid;max-width:180px;color:var(--dep-chip-text)}
+.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'Syne',sans-serif;font-weight:600;border:1px solid;max-width:180px;color:var(--dep-chip-text)}
 .dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dep-x{cursor:pointer;opacity:.6;font-size:13px;line-height:1;flex-shrink:0;margin-left:2px}
 .dep-x:hover{opacity:1}
@@ -3075,7 +3075,7 @@ function renderPopBody(){
         const sucBg=sucC?sucC.tx+'33':'var(--acc2)';
         const sucTx=sucC?sucC.tx:'var(--acc)';
         const chip=document.createElement('span');chip.className='dep-chip';
-        chip.style.cssText=`background:${sucBg};border-color:${sucTx};color:var(--dep-chip-text)`;
+        chip.style.cssText=`background:${sucBg};border-color:${sucTx}99;color:var(--dep-chip-text)`;
         chip.innerHTML=`<span class="dep-chip-name">${escHtml(suc?suc.name:'[slettet]')}</span><span class="dep-x" title="Fjern kobling">×</span>`;
         chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
         sucRow.appendChild(chip);
@@ -3100,7 +3100,7 @@ function renderPopBody(){
           const pBg=pC?pC.tx+'33':'var(--acc2)';
           const pTx=pC?pC.tx:'var(--acc)';
           const chip=document.createElement('span');chip.className='dep-chip';
-          chip.style.cssText=`background:${pBg};border-color:${pTx};color:var(--dep-chip-text)`;
+          chip.style.cssText=`background:${pBg};border-color:${pTx}99;color:var(--dep-chip-text)`;
           chip.innerHTML=`<span class="dep-chip-name">${escHtml(p.name)}</span><span class="dep-x" title="Fjern kobling">×</span>`;
           chip.querySelector('.dep-x').addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
           predChips.appendChild(chip);
