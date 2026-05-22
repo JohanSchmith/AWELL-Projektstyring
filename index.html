@@ -1743,7 +1743,7 @@ function renderPalette(){
           const t=taskBy(dragSrcTid);
           if(t){t.staff=t.staff.filter(s=>s!==dragEid);showToast(`${dragEid} fjernet fra opgave`)}
           dragEid=null;dragSrcTid=null;
-          saveState();computeConflicts();const cfg2=getZoomConfig();const d2=vdays();
+          saveState();computeConflicts();const cfg2=getZoomConfig();const d2=timelineDays(cfg2);
           if(view==='flip'){renderFlipGantt(d2,cfg2);renderFlipSidebar(d2,cfg2)}
           else{renderGantt(d2,cfg2);renderSidebar(d2,cfg2)}
           renderPalette();
@@ -1842,7 +1842,7 @@ function renderPalette(){
         const t=taskBy(dragSrcTid);
         if(t){t.staff=t.staff.filter(s=>s!==dragEid);showToast(`${dragEid} fjernet fra opgave`)}
         dragEid=null;dragSrcTid=null;
-        saveState();computeConflicts();const cfg2=getZoomConfig();const d2=vdays();
+        saveState();computeConflicts();const cfg2=getZoomConfig();const d2=timelineDays(cfg2);
         if(view==='flip'){renderFlipGantt(d2,cfg2);renderFlipSidebar(d2,cfg2)}
         else{renderGantt(d2,cfg2);renderSidebar(d2,cfg2)}
         renderPalette();
@@ -2506,7 +2506,7 @@ function renderFlipSidebar(days,cfg){
       if(insertAfter)newIdx++;
       emps.splice(newIdx,0,moved);
       empDragIdx=null;
-      const c2=getZoomConfig();const d2=vdays();
+      const c2=getZoomConfig();const d2=timelineDays(c2);
       renderFlipSidebar(d2,c2);renderFlipGantt(d2,c2);
     });
 
@@ -3082,17 +3082,17 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   ghost.style.cssText="position:fixed;pointer-events:none;z-index:999;opacity:.85;background:var(--acc);border-radius:5px;padding:4px 10px;font-size:10px;font-family:'DM Mono',monospace;color:#fff;white-space:nowrap;transform:translate(-50%,-130%);box-shadow:0 4px 14px rgba(0,0,0,.4)";
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
-  const day0str=ky(days[0]); // freeze: timelineDays[0] = vs - panBuffer
-  // startDate = the day column the cursor is over at drop
-  const getDateAtX=(clientX)=>{
+  // days[i] is the date at pixel i*dw in the gantt.
+  // We look up the date directly from the days array using pixel position.
+  const getDayAtX=(clientX)=>{
     const wr=wrap.getBoundingClientRect();
     const mouseXInGantt=clientX-wr.left+wrap.scrollLeft;
-    const dayIdx=Math.max(0,Math.min(days.length-1,Math.floor(mouseXInGantt/cfg.dw)));
-    return ky(add(pd(day0str),dayIdx));
+    const idx=Math.max(0,Math.min(days.length-1,Math.floor(mouseXInGantt/cfg.dw)));
+    return ky(days[idx]);
   };
   const onMove=ev=>{
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
-    const ns=getDateAtX(ev.clientX);
+    const ns=getDayAtX(ev.clientX);
     const ne=ky(add(pd(ns),dur));
     ghost.textContent=task.name+'  '+fmtDate(ns)+'–'+fmtDate(ne);
     flipDragTask._dragNs=ns;
@@ -3273,8 +3273,9 @@ function tmSyncFromDates(){
   const s=document.getElementById('tm-s').value;
   const e=document.getElementById('tm-e').value;
   if(s&&e&&e>=s){
-    const dur=daysBetween(s,e);
-    document.getElementById('tm-dur').value=dur||'';
+    // endDate is inclusive: start=Jan1, end=Jan1 = 1 day; start=Jan1, end=Jan3 = 3 days
+    const dur=daysBetween(s,e)+1;
+    document.getElementById('tm-dur').value=dur;
   } else {
     document.getElementById('tm-dur').value='';
   }
@@ -3282,10 +3283,12 @@ function tmSyncFromDates(){
 function tmSyncFromDur(){
   const s=document.getElementById('tm-s').value;
   const durVal=parseFloat(document.getElementById('tm-dur').value);
-  if(s&&!isNaN(durVal)&&durVal>0){
-    // half-day = 0.5 → round to nearest day for endDate (min 0 offset)
-    const daysOffset=Math.max(0,Math.round(durVal)-1);
-    const endD=ky(add(pd(s),daysOffset));
+  if(s&&!isNaN(durVal)&&durVal>=0.5){
+    // 1 day → end = start (same day). 2 days → end = start+1. etc.
+    // For half-days: 0.5 → same day (half day, end=start)
+    const daysOffset=Math.max(0,Math.round(durVal*2)/2-1); // steps of 0.5
+    const fullDays=Math.floor(daysOffset);
+    const endD=ky(add(pd(s),fullDays));
     document.getElementById('tm-e').value=endD;
   }
 }
