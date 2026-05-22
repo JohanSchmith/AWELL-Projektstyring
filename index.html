@@ -546,6 +546,17 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--s3);border:1px solid var(--b2);border-radius:9px;padding:9px 16px;font-size:11px;color:var(--t2);font-family:'DM Mono',monospace;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0)}
 .toast.warn{border-color:var(--warn);color:var(--warn)}
+
+.cmt-tooltip{position:fixed;z-index:9000;background:var(--s2);border:0.5px solid var(--b2);border-radius:10px;padding:10px 13px;min-width:220px;max-width:300px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.cmt-tooltip.visible{opacity:1}
+.cmt-tooltip-title{font-size:11px;font-weight:700;color:var(--t1);font-family:'Syne',sans-serif;margin:0 0 7px;padding-bottom:6px;border-bottom:0.5px solid var(--b2)}
+.cmt-tooltip-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:7px}
+.cmt-tooltip-item:last-of-type{margin-bottom:0}
+.cmt-tooltip-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;margin-top:1px}
+.cmt-tooltip-body{flex:1;min-width:0}
+.cmt-tooltip-meta{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin:0 0 2px}
+.cmt-tooltip-text{font-size:11px;color:var(--t1);line-height:1.4;margin:0;white-space:pre-wrap;word-break:break-word}
+.cmt-tooltip-more{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;margin:6px 0 0;padding-top:5px;border-top:0.5px solid var(--b2)}
 </style>
 </head>
 <body>
@@ -2227,6 +2238,8 @@ function renderGantt(days,cfg){
           bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+          bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
+          bar.addEventListener('mouseleave',hideCmtTooltip);
           bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
           bar.addEventListener('dragleave',()=>bar.style.outline='');
           bar.addEventListener('drop',e=>{
@@ -2355,6 +2368,8 @@ function renderGantt(days,cfg){
           bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+          bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
+          bar.addEventListener('mouseleave',hideCmtTooltip);
           bar.addEventListener('dragover',e=>{if(dragEid||dragEids){e.preventDefault();bar.style.outline='2px solid var(--acc)'}});
           bar.addEventListener('dragleave',()=>bar.style.outline='');
           bar.addEventListener('drop',e=>{
@@ -2678,6 +2693,8 @@ function renderFlipGantt(days,cfg){
       });
       bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
       bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
+      bar.addEventListener('mouseenter',()=>showCmtTooltip(bar,task.id));
+      bar.addEventListener('mouseleave',hideCmtTooltip);
 
       // Drag task bar to move to another day or employee
       bar.addEventListener('mousedown',e=>{
@@ -3071,6 +3088,7 @@ function popDelComment(cid){
 
 function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   e.preventDefault();e.stopPropagation();
+  hideCmtTooltip();
   if(flipDragTask)return;
   flipDragTask=task;flipDragFromEmp=empId;
   const origStart=task.startDate;
@@ -3146,6 +3164,59 @@ function startFlipDrag(e,barEl,task,empId,days,cfg,wrapId){
   };
   document.addEventListener('mousemove',onMove);
   document.addEventListener('mouseup',onUp);
+}
+
+// ── COMMENT TOOLTIP ──────────────────────────────────────
+let _cmtTip=null,_cmtTipTimer=null;
+function _ensureTip(){
+  if(!_cmtTip){
+    _cmtTip=document.createElement('div');
+    _cmtTip.className='cmt-tooltip';
+    document.body.appendChild(_cmtTip);
+  }
+  return _cmtTip;
+}
+function showCmtTooltip(el,taskId){
+  clearTimeout(_cmtTipTimer);
+  const cmts=comments.filter(c=>c.targetType==='task'&&c.targetId===taskId).sort((a,b)=>a.ts-b.ts);
+  if(!cmts.length)return;
+  const tip=_ensureTip();
+  const task=taskBy(taskId);
+  const proj=task?.projId?projBy(task.projId):null;
+  const title=proj?`${proj.num} · ${task.name}`:task?.name||'';
+  const show=cmts.slice(-3); // show latest 3
+  const extra=cmts.length-show.length;
+  let html=`<div class="cmt-tooltip-title">${escHtml(title)}</div>`;
+  show.forEach(c=>{
+    const emp=empBy(c.author);const col=emp?emp.color:'#9898b2';
+    const d=new Date(c.ts);
+    const ts=`${d.getDate()}. ${DKMs[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    html+=`<div class="cmt-tooltip-item">
+      <div class="cmt-tooltip-avatar" style="background:${col}22;color:${col}">${escHtml(c.author)}</div>
+      <div class="cmt-tooltip-body">
+        <div class="cmt-tooltip-meta">${escHtml(c.author)} · ${ts}</div>
+        <div class="cmt-tooltip-text">${escHtml(c.text)}</div>
+      </div>
+    </div>`;
+  });
+  if(extra>0)html+=`<div class="cmt-tooltip-more">+ ${extra} kommentar${extra!==1?'er':''} mere</div>`;
+  tip.innerHTML=html;
+  _cmtTipTimer=setTimeout(()=>{
+    const r=el.getBoundingClientRect();
+    let top=r.top-tip.offsetHeight-8;
+    if(top<8)top=r.bottom+8;
+    let left=r.left;
+    const maxLeft=window.innerWidth-tip.offsetWidth-8;
+    if(left>maxLeft)left=maxLeft;
+    if(left<8)left=8;
+    tip.style.top=top+'px';
+    tip.style.left=left+'px';
+    tip.classList.add('visible');
+  },300);
+}
+function hideCmtTooltip(){
+  clearTimeout(_cmtTipTimer);
+  if(_cmtTip)_cmtTip.classList.remove('visible');
 }
 
 // ── RESIZE ────────────────────────────────────────────────
