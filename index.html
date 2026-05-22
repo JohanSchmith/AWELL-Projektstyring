@@ -21,7 +21,7 @@
   --t1:#1a1a2e;--t2:#52526a;--t3:#8e8ea8;
   --bar-text-filter:brightness(0.5) saturate(1.4);
 }
-:root.light .comment-badge-icon{filter:grayscale(1) brightness(0.3)}
+:root.light .comment-badge-icon{filter:grayscale(1) brightness(0.45) opacity(0.75)}
 /* Darken bar text on light theme — only the text elements, not the bar background */
 :root.light .bar-name,
 :root.light .flip-bar-name,
@@ -3390,8 +3390,7 @@ function showCmtTooltip(el,taskId){
     item.addEventListener('click',()=>{
       const tid=parseInt(item.dataset.taskid);
       selectedTid=tid;
-      const barEl=document.querySelector(`[data-tid="${tid}"]`);
-      openPopup('task',tid,barEl?{clientX:barEl.getBoundingClientRect().left,clientY:barEl.getBoundingClientRect().top}:null);
+      openPopup('task',tid,null);
       setTimeout(()=>setPopTab('comments'),10);
       hideCmtTooltip();
     });
