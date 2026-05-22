@@ -242,11 +242,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-close{color:var(--t3);cursor:pointer;font-size:17px;line-height:1;padding:2px 4px;transition:color .1s;flex-shrink:0}
 .pop-close:hover{color:var(--t1)}
 /* Tabs */
-.pop-tabs{display:flex;border-bottom:1px solid var(--b1)}
-.pop-tab{flex:1;padding:7px 0;font-size:11px;font-weight:700;cursor:pointer;color:var(--t3);border:none;background:transparent;font-family:'Syne',sans-serif;border-bottom:2px solid transparent;transition:all .15s;position:relative}
-.pop-tab:hover{color:var(--t1)}
-.pop-tab.on{color:var(--acc);border-bottom-color:var(--acc)}
-.pop-tab .tbadge{position:absolute;top:3px;right:8px;width:13px;height:13px;border-radius:50%;background:var(--acc);color:#fff;font-size:7px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:center}
+.pop-tabs{display:flex;gap:5px;padding:8px 12px 0;border-bottom:1px solid var(--b1)}
+.pop-tab{flex:1;padding:5px 6px;font-size:11px;font-weight:700;cursor:pointer;color:var(--t3);border:0.5px solid var(--b2);background:transparent;font-family:'Syne',sans-serif;border-radius:6px 6px 0 0;border-bottom:none;transition:all .15s;position:relative}
+.pop-tab:hover{color:var(--t1);background:var(--s3)}
+.pop-tab.on{color:var(--t1);background:var(--s1);border-color:var(--b2);border-bottom:1px solid var(--s1);margin-bottom:-1px}
 /* Body */
 .pop-body{flex:1;overflow-y:auto;min-height:0}
 .pop-body::-webkit-scrollbar{width:4px}
@@ -2921,8 +2920,8 @@ function buildPopup(e){
 
   const ccnt=commentCount(popTarget.type,popTarget.id);
   const tabDefs=isTask
-    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Ressourcer'},{id:'comments',lbl:'💬',badge:ccnt||''}]
-    :[{id:'info',lbl:'Info'},{id:'opgaver',lbl:'Opgaver',badge:tasksOf(popTarget.id).length},{id:'comments',lbl:'💬',badge:ccnt||''}];
+    ?[{id:'info',lbl:'Info'},{id:'hold',lbl:'Ressourcer'},{id:'comments',lbl:ccnt?`💬 ${ccnt}`:'💬'}]
+    :[{id:'info',lbl:'Info'},{id:'opgaver',lbl:'Opgaver'},{id:'comments',lbl:ccnt?`💬 ${ccnt}`:'💬'}];
 
   const tabsEl=document.getElementById('pop-tabs');
   tabsEl.innerHTML='';
@@ -2931,9 +2930,6 @@ function buildPopup(e){
     btn.className='pop-tab'+(popTab===t.id?' on':'');
     btn.dataset.tabid=t.id;
     btn.textContent=t.lbl;
-    if(t.badge!==''){
-      const b=document.createElement('span');b.className='tbadge';b.textContent=t.badge;btn.appendChild(b);
-    }
     btn.addEventListener('click',()=>setPopTab(t.id));
     tabsEl.appendChild(btn);
   });
@@ -3603,8 +3599,6 @@ function startDepPick(taskId,type){
     saveState();computeConflicts();render();
     finishDepPick();
     showToast('Kobling oprettet');
-    // Open popup on the task that was picked (so user sees the connection)
-    setTimeout(()=>{openPopup('task',pickedId,null);},80);
   };
   document.addEventListener('mousedown',_depPickClick,{capture:true});
 }
