@@ -3480,13 +3480,17 @@ function getDepChain(taskId,visited=new Set()){
 }
 
 function applyDepShift(movedTaskId,oldStart,newStart,callback){
+  // Both forward and backward: offer to shift the whole successor chain by same delta.
+  // Never shifts predecessors — only successors (tasks that depend ON movedTask).
   const delta=daysBetween(oldStart,newStart);
   if(delta===0){callback();return;}
   const chain=getDepChain(movedTaskId);
-  if(!chain.length||delta<0){callback();return;}
+  if(!chain.length){callback();return;}
+  const dir=delta>0?'frem':'tilbage';
+  const absDelta=Math.abs(delta);
   const names=chain.map(t=>`<strong>${escHtml(t.name)}</strong>`).join(' → ');
   document.getElementById('dep-modal-body').innerHTML=
-    `Vil du rykke ${chain.length===1?'den tilkoblede opgave':'de tilkoblede opgaver'} <strong>${delta} dag${delta!==1?'e':''} frem</strong>?<br><br>${names}`;
+    `Vil du rykke ${chain.length===1?'den tilkoblede opgave':'de tilkoblede opgaver'} <strong>${absDelta} dag${absDelta!==1?'e':''} ${dir}</strong>?<br><br>${names}`;
   const modal=document.getElementById('mbg-dep');
   modal.classList.add('on');
   const confirmBtn=document.getElementById('dep-confirm-btn');
@@ -3523,8 +3527,9 @@ function startRz(e,task,side,days,cfg){
     const moved=rzTask;rzTask=null;
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
     computeConflicts();renderPalette();if(popTarget?.id===task.id)refreshPopup();
-    if(moved&&rzSide==='r')applyDepShift(moved.id,rzOldStart,moved.startDate,()=>{computeConflicts();render();saveState();});
-    else saveState();
+    // Dep shift: right-side resize shifts end → successors follow
+    // Left-side resize shifts start → that's the task itself moving, successors follow too
+    applyDepShift(moved.id,rzOldStart,moved.startDate,()=>{computeConflicts();render();saveState();});
   };
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
 }
