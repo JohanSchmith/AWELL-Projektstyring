@@ -2296,8 +2296,8 @@ function renderGantt(days,cfg){
             cb.addEventListener('click',e2=>{e2.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e2);setTimeout(()=>setPopTab('comments'),10);});
             bar.appendChild(cb);
           }
-          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,task,days,cfg);});
-          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,task,days,cfg);});
+          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
+          bar.addEventListener('mousedown',e=>{if(rzTask||e.button!==0||e.target.closest('.rz,.bar-chip,.comment-badge'))return;startGanttDrag(e,bar,task,days,cfg);});
           bar.addEventListener('click',e=>{if(rzTask)return;e.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e);renderSidebar(days,cfg)});
           bar.addEventListener('dblclick',e=>{e.stopPropagation();openTaskEdit(task.id)});
           bar.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id)});
@@ -3228,7 +3228,7 @@ function popDelComment(cid){
 }
 
 // ── PLAN-VIEW TASK DRAG (tid only, no row change) ────────
-function startGanttDrag(e,task,days,cfg){
+function startGanttDrag(e,barEl,task,days,cfg){
   e.preventDefault();e.stopPropagation();
   hideCmtTooltip();
   const origStart=task.startDate;
@@ -3240,35 +3240,38 @@ function startGanttDrag(e,task,days,cfg){
   ghost.textContent=task.name;
   document.body.appendChild(ghost);
   let didMove=false,ns=origStart,ne=origEnd;
+  // Delta-based: same approach as startFlipDrag
   const dragStartX=e.clientX;
   const dragStartScroll=wrap.scrollLeft;
+  const getDateAtDelta=()=>{
+    const dxPx=(lastClientX-dragStartX)+(wrap.scrollLeft-dragStartScroll);
+    const delta=Math.round(dxPx/cfg.dw);
+    return {ns:ky(add(pd(origStart),delta)),ne:ky(add(pd(origStart),delta+dur))};
+  };
+  // Store bar's original pixel position once
+  const origBarLeft=parseFloat(barEl.style.left)||0;
+  const origBarWidth=parseFloat(barEl.style.width)||0;
+  let lastClientX=e.clientX;
   const onMove=ev=>{
+    lastClientX=ev.clientX;
     ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';
-    const dxPx=(ev.clientX-dragStartX)+(wrap.scrollLeft-dragStartScroll);
-    const delta=Math.round(dxPx/getZoomConfig().dw);
-    ns=ky(add(pd(origStart),delta));
-    ne=ky(add(pd(ns),dur));
+    const d=getDateAtDelta();
+    ns=d.ns;ne=d.ne;
     ghost.textContent=task.name+'  '+fmtDate(ns)+'–'+fmtDate(ne);
-    // Live-preview: move the bar visually
-    const barEl=document.querySelector(`[data-tid="${task.id}"]`);
-    if(barEl){
-      const freshDays=timelineDays(getZoomConfig());
-      const si=freshDays.findIndex(d=>ky(d)===ns);
-      const ei=freshDays.findIndex(d=>ky(d)===ne);
-      const dw=getZoomConfig().dw;
-      if(si>=0)barEl.style.left=(si*dw+2)+'px';
-      if(si>=0&&ei>=0)barEl.style.width=((ei-si+1)*dw-4)+'px';
-    }
+    // Live preview: offset bar by pixel delta
+    const dxPx=(ev.clientX-dragStartX)+(wrap.scrollLeft-dragStartScroll);
+    barEl.style.left=(origBarLeft+dxPx)+'px';
     didMove=true;
   };
   const onUp=()=>{
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
     if(ghost.parentNode)document.body.removeChild(ghost);
+    // Reset bar position — render() will place it correctly
+    barEl.style.left=origBarLeft+'px';
     if(!didMove)return;
-    // Suppress the click event that fires after mouseup
-    const absorb=ev=>{ev.stopImmediatePropagation();ev.preventDefault();};
-    bar.addEventListener('click',absorb,{capture:true,once:true});
+    // Suppress the click that fires after mouseup
+    barEl.addEventListener('click',ev=>{ev.stopImmediatePropagation();ev.preventDefault();},{capture:true,once:true});
     if(ne<ns){render();return;}
     const oldStart=task.startDate;
     task.startDate=ns;task.endDate=ne;
