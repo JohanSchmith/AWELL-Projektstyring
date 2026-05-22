@@ -308,8 +308,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-foot button{flex:1;min-height:28px;padding:5px 0;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;border:none;transition:all .15s}
 .pop-btn-e{background:var(--pop-action-bg,var(--s3));color:#111;border:1px solid var(--pop-action-border,var(--b2))!important}
 .pop-btn-e:hover{filter:brightness(1.08);color:#111}
-.pop-btn-d{flex:0 0 30px!important;width:30px;min-width:30px;height:28px;padding:0!important;background:rgba(210,55,55,.12);color:#b91c1c;border:1px solid rgba(210,55,55,.35)!important;font-size:0;overflow:hidden;position:relative}
-.pop-btn-d::before{content:'x';font-size:13px;font-weight:800;line-height:1}
+.pop-btn-d{flex:0 0 44px!important;width:44px;min-width:44px;height:28px;padding:0!important;background:rgba(210,55,55,.10);color:#b91c1c;border:1px solid rgba(210,55,55,.35)!important;font-size:10px;overflow:hidden}
+.pop-btn-d::before{content:none}
 .pop-btn-d:hover{background:rgba(210,55,55,.22)}
 .pop-btn-a{background:var(--pop-action-bg,var(--acc));color:#111;border:1px solid var(--pop-action-border,var(--acc))!important}
 .pop-btn-a:hover{filter:brightness(1.08)}
@@ -572,7 +572,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-pick-mode [data-tid]{cursor:pointer!important;transition:filter .1s}
 .dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
 .dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'DM Mono',monospace;font-weight:700;border:1.5px solid;max-width:180px}
+.dep-chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:3px 7px 3px 6px;font-size:11px;font-family:'DM Mono',monospace;font-weight:700;border:1.5px solid;max-width:180px;color:#111}
 .dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dep-x{cursor:pointer;opacity:.6;font-size:13px;line-height:1;flex-shrink:0;margin-left:2px}
 .dep-x:hover{opacity:1}
@@ -585,7 +585,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 :root.light .pop-cavatar,
 :root.light .cmt-tooltip-avatar,
 :root.light .pop-cwho-name,
-:root.light .dep-chip {filter:brightness(0.6) saturate(1.3)}
+:root.light .dep-chip {filter:none}
 </style>
 </head>
 <body>
@@ -2974,13 +2974,13 @@ function buildPopup(e){
   if(isTask){
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="popEdit()">✏️ Rediger</button>
-      <button class="pop-btn-d" onclick="popDelete()">✕ Slet</button>`;
+      <button class="pop-btn-d" onclick="popDelete()">Slet</button>`;
   } else {
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="openProjEdit(${item.id})">✏️ Rediger</button>
 
       <button class="pop-btn-a" onclick="openTaskM(${item.id});closePopup()">+ Opgave</button>
-      <button class="pop-btn-d" onclick="popDeleteProj()">✕ Slet</button>`;
+      <button class="pop-btn-d" onclick="popDeleteProj()">Slet</button>`;
   }
 }
 
@@ -3007,13 +3007,13 @@ function setPopTab(tab){
   if(isTask){
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="popEdit()">✏️ Rediger</button>
-      <button class="pop-btn-d" onclick="popDelete()">✕ Slet</button>`;
+      <button class="pop-btn-d" onclick="popDelete()">Slet</button>`;
   } else {
     foot.innerHTML=`
       <button class="pop-btn-e" onclick="openProjEdit(${item.id})">✏️ Rediger</button>
 
       <button class="pop-btn-a" onclick="openTaskM(${item.id});closePopup()">+ Opgave</button>
-      <button class="pop-btn-d" onclick="popDeleteProj()">✕ Slet</button>`;
+      <button class="pop-btn-d" onclick="popDeleteProj()">Slet</button>`;
   }
 }
 
@@ -3044,10 +3044,10 @@ function renderPopBody(){
         const suc=taskBy(task.sucId);
         const sucProj=suc?.projId?projBy(suc.projId):null;
         const sucC=sucProj?pcm[sucProj.colorId]:null;
-        const sucBg=sucC?sucC.bg:'#2a2a3a';
-        const sucTx=sucC?sucC.tx:'#9898b2';
+        const sucBg=sucC?sucC.tx+'33':'var(--acc2)';
+        const sucTx=sucC?sucC.tx:'var(--acc)';
         const chip=document.createElement('span');chip.className='dep-chip';
-        chip.style.cssText=`background:${sucBg};border-color:${sucTx}66;color:${sucTx}`;
+        chip.style.cssText=`background:${sucBg};border-color:${sucTx};color:#111`;
         chip.innerHTML=`<span class="dep-chip-name">${escHtml(suc?suc.name:'[slettet]')}</span><span class="dep-x" title="Fjern kobling">×</span>`;
         chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
         sucRow.appendChild(chip);
@@ -3069,10 +3069,10 @@ function renderPopBody(){
         preds.forEach(p=>{
           const pProj=p.projId?projBy(p.projId):null;
           const pC=pProj?pcm[pProj.colorId]:null;
-          const pBg=pC?pC.bg:'#2a2a3a';
-          const pTx=pC?pC.tx:'#9898b2';
+          const pBg=pC?pC.tx+'33':'var(--acc2)';
+          const pTx=pC?pC.tx:'var(--acc)';
           const chip=document.createElement('span');chip.className='dep-chip';
-          chip.style.cssText=`background:${pBg};border-color:${pTx}66;color:${pTx}`;
+          chip.style.cssText=`background:${pBg};border-color:${pTx};color:#111`;
           chip.innerHTML=`<span class="dep-chip-name">${escHtml(p.name)}</span><span class="dep-x" title="Fjern kobling">×</span>`;
           chip.querySelector('.dep-x').addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
           predChips.appendChild(chip);
