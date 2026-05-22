@@ -569,9 +569,13 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-arrow-path{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
 .dep-arrow-head{opacity:.7}
 
-.dep-pick-mode [data-tid]{cursor:crosshair!important;transition:filter .1s}
+.dep-pick-mode [data-tid]{cursor:pointer!important;transition:filter .1s}
 .dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
 .dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.dep-chip{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:1px 6px 1px 5px;font-size:10px;font-family:'DM Mono',monospace;font-weight:700;border:1px solid transparent;max-width:160px}
+.dep-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dep-x{cursor:pointer;opacity:.55;font-size:11px;line-height:1;flex-shrink:0;margin-left:1px}
+.dep-x:hover{opacity:1}
 </style>
 </head>
 <body>
@@ -3006,14 +3010,17 @@ function renderPopBody(){
       const sucLbl=document.createElement('span');sucLbl.className='pop-lbl';sucLbl.textContent='Efterfølges af';sucRow.appendChild(sucLbl);
       if(task.sucId){
         const suc=taskBy(task.sucId);
+        const sucProj=suc?.projId?projBy(suc.projId):null;
+        const sucCol=sucProj?pcm[sucProj.colorId]?.tx:'#9898b2';
         const chip=document.createElement('span');chip.className='dep-chip';
-        chip.innerHTML=`<span class="dep-arrow">→</span> ${escHtml(suc?suc.name:'[slettet]')}<span class="dep-x" title="Fjern kobling">×</span>`;
+        chip.style.cssText=`background:${sucCol}22;border-color:${sucCol}44;color:${sucCol}`;
+        chip.innerHTML=`<span class="dep-chip-name">${escHtml(suc?suc.name:'[slettet]')}</span><span class="dep-x" title="Fjern kobling">×</span>`;
         chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
         sucRow.appendChild(chip);
       } else {
         const addBtn=document.createElement('button');addBtn.className='btn btn-g';
         addBtn.style.cssText='font-size:10px;padding:3px 9px;flex-shrink:0';
-        addBtn.textContent='+ Vælg i chart';
+        addBtn.textContent='+ Vælg';
         addBtn.addEventListener('click',e=>{e.stopPropagation();startDepPick(task.id,'suc');});
         sucRow.appendChild(addBtn);
       }
@@ -3026,18 +3033,19 @@ function renderPopBody(){
       if(preds.length){
         const predChips=document.createElement('div');predChips.style.cssText='display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end';
         preds.forEach(p=>{
+          const pProj=p.projId?projBy(p.projId):null;
+          const pCol=pProj?pcm[pProj.colorId]?.tx:'#9898b2';
           const chip=document.createElement('span');chip.className='dep-chip';
-          chip.innerHTML=`${escHtml(p.name)} <span class="dep-arrow">→</span>`;
-          const rx=document.createElement('span');rx.className='dep-x';rx.title='Fjern kobling';rx.textContent='×';
-          rx.addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
-          chip.appendChild(rx);
+          chip.style.cssText=`background:${pCol}22;border-color:${pCol}44;color:${pCol}`;
+          chip.innerHTML=`<span class="dep-chip-name">${escHtml(p.name)}</span><span class="dep-x" title="Fjern kobling">×</span>`;
+          chip.querySelector('.dep-x').addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
           predChips.appendChild(chip);
         });
         predRow.appendChild(predChips);
       } else {
         const addBtn2=document.createElement('button');addBtn2.className='btn btn-g';
         addBtn2.style.cssText='font-size:10px;padding:3px 9px;flex-shrink:0';
-        addBtn2.textContent='+ Vælg i chart';
+        addBtn2.textContent='+ Vælg';
         addBtn2.addEventListener('click',e=>{e.stopPropagation();startDepPick(task.id,'pre');});
         predRow.appendChild(addBtn2);
       }
@@ -3570,8 +3578,12 @@ function startDepPick(taskId,type){
   // Click handler on bars
   _depPickClick=e=>{
     const bar=e.target.closest('[data-tid]');
-    if(!bar){cancelDepPick();return;}
-    e.stopImmediatePropagation();e.preventDefault();
+    if(!bar){
+      // Clicked outside a bar — cancel only if not clicking popup itself
+      if(!e.target.closest('.popup'))cancelDepPick();
+      return;
+    }
+    e.stopImmediatePropagation();e.preventDefault();e.stopPropagation();
     const pickedId=parseInt(bar.dataset.tid);
     if(pickedId===_depPickTaskId){cancelDepPick();showToast('En opgave kan ikke afhænge af sig selv');return;}
     // Check for circular dependency
