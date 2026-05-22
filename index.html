@@ -568,6 +568,10 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .dep-svg-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}
 .dep-arrow-path{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
 .dep-arrow-head{opacity:.7}
+
+.dep-pick-mode [data-tid]{cursor:crosshair!important;transition:filter .1s}
+.dep-pick-mode [data-tid]:hover{filter:brightness(1.25)!important;box-shadow:0 0 0 2px var(--acc)!important;z-index:20!important}
+.dep-pick-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;border-radius:8px;padding:8px 18px;font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 </style>
 </head>
 <body>
@@ -2994,38 +2998,51 @@ function renderPopBody(){
         <div class="pop-row"><span class="pop-lbl">Slut</span><span class="pop-val">${fmtDate(task.endDate)}</span></div>
         <div class="pop-row"><span class="pop-lbl">Varighed</span><span class="pop-val">${wd} arbejdsdag${wd!==1?'e':''}</span></div>
         ${cfMsg?`<div class="pop-conflict">⚠ ${escHtml(cfMsg)}</div>`:''}`;
-      // Dependency row
-      const depRow=document.createElement('div');depRow.className='pop-row';depRow.style.marginTop='8px';depRow.style.flexDirection='column';depRow.style.alignItems='flex-start';depRow.style.gap='5px';
-      const depLbl=document.createElement('span');depLbl.className='pop-lbl';depLbl.textContent='Efterfølger';depRow.appendChild(depLbl);
-      const depVal=document.createElement('div');depVal.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%';
+      // ── Dependency section ──
+      const depSection=document.createElement('div');depSection.style.cssText='margin-top:10px;border-top:0.5px solid var(--b1);padding-top:8px;display:flex;flex-direction:column;gap:6px';
+
+      // "Efterfølges af" — this task's successor
+      const sucRow=document.createElement('div');sucRow.style.cssText='display:flex;align-items:center;gap:6px;justify-content:space-between';
+      const sucLbl=document.createElement('span');sucLbl.className='pop-lbl';sucLbl.textContent='Efterfølges af';sucRow.appendChild(sucLbl);
       if(task.sucId){
         const suc=taskBy(task.sucId);
         const chip=document.createElement('span');chip.className='dep-chip';
         chip.innerHTML=`<span class="dep-arrow">→</span> ${escHtml(suc?suc.name:'[slettet]')}<span class="dep-x" title="Fjern kobling">×</span>`;
         chip.querySelector('.dep-x').addEventListener('click',e=>{e.stopPropagation();delete task.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
-        depVal.appendChild(chip);
+        sucRow.appendChild(chip);
       } else {
-        const sel=document.createElement('select');sel.className='dep-select';
-        sel.innerHTML='<option value="">+ Tilføj efterfølger…</option>'+tasks.filter(t=>t.id!==task.id&&t.id!==task.sucId).map(t=>`<option value="${t.id}">${escHtml(t.name)}</option>`).join('');
-        sel.addEventListener('change',()=>{if(sel.value){task.sucId=parseInt(sel.value);saveState();refreshPopup();showToast('Kobling oprettet');}});
-        depVal.appendChild(sel);
+        const addBtn=document.createElement('button');addBtn.className='btn btn-g';
+        addBtn.style.cssText='font-size:10px;padding:3px 9px;flex-shrink:0';
+        addBtn.textContent='+ Vælg i chart';
+        addBtn.addEventListener('click',e=>{e.stopPropagation();startDepPick(task.id,'suc');});
+        sucRow.appendChild(addBtn);
       }
-      depRow.appendChild(depVal);
-      // Also show predecessors (tasks that point to this task)
+      depSection.appendChild(sucRow);
+
+      // "Afhænger af" — tasks that point to this task as their successor
       const preds=tasks.filter(t=>t.sucId===task.id);
+      const predRow=document.createElement('div');predRow.style.cssText='display:flex;align-items:center;gap:6px;justify-content:space-between';
+      const predLbl=document.createElement('span');predLbl.className='pop-lbl';predLbl.textContent='Afhænger af';predRow.appendChild(predLbl);
       if(preds.length){
-        const predDiv=document.createElement('div');predDiv.style.cssText='display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px';
+        const predChips=document.createElement('div');predChips.style.cssText='display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end';
         preds.forEach(p=>{
           const chip=document.createElement('span');chip.className='dep-chip';
-          chip.innerHTML=`<span style="font-size:9px;color:var(--t3)">foregår før</span> <span class="dep-arrow">→</span> ${escHtml(p.name)}`;
-          predDiv.appendChild(chip);
+          chip.innerHTML=`${escHtml(p.name)} <span class="dep-arrow">→</span>`;
+          const rx=document.createElement('span');rx.className='dep-x';rx.title='Fjern kobling';rx.textContent='×';
+          rx.addEventListener('click',ev=>{ev.stopPropagation();delete p.sucId;saveState();refreshPopup();showToast('Kobling fjernet');});
+          chip.appendChild(rx);
+          predChips.appendChild(chip);
         });
-        const predLbl=document.createElement('span');predLbl.className='pop-lbl';predLbl.textContent='Foregås af';
-        const predRow=document.createElement('div');predRow.className='pop-row';predRow.style.marginTop='2px';predRow.style.flexDirection='column';predRow.style.alignItems='flex-start';predRow.style.gap='5px';
-        predRow.appendChild(predLbl);predRow.appendChild(predDiv);
-        div.appendChild(predRow);
+        predRow.appendChild(predChips);
+      } else {
+        const addBtn2=document.createElement('button');addBtn2.className='btn btn-g';
+        addBtn2.style.cssText='font-size:10px;padding:3px 9px;flex-shrink:0';
+        addBtn2.textContent='+ Vælg i chart';
+        addBtn2.addEventListener('click',e=>{e.stopPropagation();startDepPick(task.id,'pre');});
+        predRow.appendChild(addBtn2);
       }
-      div.appendChild(depRow);
+      depSection.appendChild(predRow);
+      div.appendChild(depSection);
     } else {
       const proj=projBy(popTarget.id);if(!proj)return;
       const ps=projStart(proj.id),pe=projEnd(proj.id);
@@ -3527,6 +3544,78 @@ function hideCmtTooltip(){
     _cmtTipTaskId=null;
   },150);
 }
+
+// ── DEP PICK MODE ─────────────────────────────────────────
+let _depPickTaskId=null,_depPickType=null,_depPickBanner=null,_depPickEsc=null,_depPickClick=null;
+
+function startDepPick(taskId,type){
+  // type: 'suc' = picking the successor of taskId
+  //       'pre' = picking the predecessor of taskId (the one that must finish first)
+  _depPickTaskId=taskId;
+  _depPickType=type;
+  // Hide popup temporarily
+  document.getElementById('popup').style.opacity='0.15';
+  document.getElementById('popup').style.pointerEvents='none';
+  // Add pick-mode class to gantt
+  document.getElementById('gantt')?.classList.add('dep-pick-mode');
+  document.getElementById('flip-gantt')?.classList.add('dep-pick-mode');
+  // Show banner
+  _depPickBanner=document.createElement('div');
+  _depPickBanner.className='dep-pick-banner';
+  _depPickBanner.textContent=(type==='suc'?'Klik på opgaven der skal følge EFTER':'Klik på opgaven der skal komme FØR')+' — ESC for at annullere';
+  document.body.appendChild(_depPickBanner);
+  // ESC handler
+  _depPickEsc=e=>{if(e.key==='Escape')cancelDepPick();};
+  document.addEventListener('keydown',_depPickEsc);
+  // Click handler on bars
+  _depPickClick=e=>{
+    const bar=e.target.closest('[data-tid]');
+    if(!bar){cancelDepPick();return;}
+    e.stopImmediatePropagation();e.preventDefault();
+    const pickedId=parseInt(bar.dataset.tid);
+    if(pickedId===_depPickTaskId){cancelDepPick();showToast('En opgave kan ikke afhænge af sig selv');return;}
+    // Check for circular dependency
+    if(type==='suc'){
+      // Would creating taskId→pickedId create a cycle?
+      const chain=getDepChain(pickedId);
+      if(chain.find(t=>t.id===_depPickTaskId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
+      const t=taskBy(_depPickTaskId);if(t)t.sucId=pickedId;
+    } else {
+      // pickedId→taskId
+      const chain=getDepChain(_depPickTaskId);
+      if(chain.find(t=>t.id===pickedId)){cancelDepPick();showToast('Cirkulær afhængighed er ikke mulig');return;}
+      const t=taskBy(pickedId);if(t)t.sucId=_depPickTaskId;
+    }
+    saveState();computeConflicts();render();
+    finishDepPick();
+    showToast('Kobling oprettet');
+    // Re-open popup on the same task
+    setTimeout(()=>{openPopup('task',taskId,null);},50);
+  };
+  // Use capture so we intercept before bar's own click handler
+  document.addEventListener('click',_depPickClick,{capture:true});
+}
+
+function cancelDepPick(){
+  finishDepPick();
+  // Restore popup
+  const tid=_depPickTaskId;
+  _depPickTaskId=null;
+  if(popTarget?.id===tid)refreshPopup();
+}
+
+function finishDepPick(){
+  document.getElementById('popup').style.opacity='';
+  document.getElementById('popup').style.pointerEvents='';
+  document.getElementById('gantt')?.classList.remove('dep-pick-mode');
+  document.getElementById('flip-gantt')?.classList.remove('dep-pick-mode');
+  if(_depPickBanner&&_depPickBanner.parentNode)_depPickBanner.parentNode.removeChild(_depPickBanner);
+  _depPickBanner=null;
+  if(_depPickEsc)document.removeEventListener('keydown',_depPickEsc);
+  if(_depPickClick)document.removeEventListener('click',_depPickClick,{capture:true});
+  _depPickEsc=null;_depPickClick=null;
+}
+
 
 // ── TASK DEPENDENCIES ────────────────────────────────────
 // task.sucId = id of successor task (Finish-to-Start link)
