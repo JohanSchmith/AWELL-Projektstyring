@@ -123,10 +123,12 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .tname-sb{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .conflict-dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex-shrink:0;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.comment-badge{display:inline-flex;align-items:center;gap:2px;flex-shrink:0;cursor:pointer;opacity:.8;transition:opacity .12s}
+.comment-badge{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;opacity:.7;transition:opacity .12s}
 .comment-badge:hover{opacity:1}
-.comment-badge-icon{font-size:13px;line-height:1}
-.comment-badge-num{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2)}
+.comment-badge-icon{width:14px;height:12px;position:relative;flex-shrink:0}
+.comment-badge-icon::before{content:'';position:absolute;inset:0;border-radius:4px 4px 4px 0;background:var(--t2);width:14px;height:11px}
+.comment-badge-icon::after{content:'';position:absolute;bottom:-3px;left:2px;width:0;height:0;border-left:4px solid var(--t2);border-right:0 solid transparent;border-top:0 solid transparent;border-bottom:3px solid transparent}
+.comment-badge-num{font-size:9px;font-weight:700;font-family:'DM Mono',monospace;color:var(--t2);line-height:1}
 
 /* ── GANTT ── */
 /* ── SCROLLBARS ── */
@@ -285,7 +287,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .pop-clist::-webkit-scrollbar{width:3px}
 .pop-clist::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .pop-cempty{text-align:center;padding:18px 0;font-size:11px;font-family:'DM Mono',monospace;color:var(--t3)}
-.pop-comment{background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:8px 10px}
+.pop-comment{background:var(--s3);border:1px solid var(--b1);border-radius:7px;padding:8px 10px;transition:border-color .12s}
+.pop-comment:hover{border-color:var(--b2)}
+.pop-comment.own{cursor:pointer}
 .pop-comment-meta{display:flex;align-items:center;gap:6px;margin-bottom:5px}
 .pop-cavatar{height:16px;padding:0 5px;border-radius:3px;font-size:8px;font-weight:700;font-family:'DM Mono',monospace;display:flex;align-items:center}
 .pop-ctime{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);flex:1}
@@ -424,7 +428,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;height:1
 .flip-task-bar.conflict-bar-task{box-shadow:0 0 0 2px var(--warn)}
 .flip-bar-proj{font-size:9px;font-family:'DM Mono',monospace;opacity:.7;flex-shrink:0}
 .flip-bar-name{font-size:10px;font-weight:700;color:inherit;overflow:hidden;text-overflow:ellipsis;flex:1}
-.flip-bar-cmtbadge{display:inline-flex;align-items:center;gap:2px;flex-shrink:0;cursor:pointer;opacity:.8;transition:opacity .12s;pointer-events:all}
+.flip-bar-cmtbadge{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;opacity:.7;transition:opacity .12s;pointer-events:all}
 .flip-bar-cmtbadge:hover{opacity:1}
 /* Resize handles */
 .flip-rz{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:6;opacity:0;transition:opacity .15s}
@@ -1556,7 +1560,7 @@ function renderSidebar(days,cfg){
         tr.className='sb-task'+(selectedTid===task.id?' selected':'');
         tr.innerHTML=`<div class="tdot" style="background:${c.tx}"></div>
           <div class="tname-sb">${task.name}</div>
-          ${tcnt?`<div class="comment-badge"><span class="comment-badge-icon">💬</span><span class="comment-badge-num">${tcnt}</span></div>`:``}
+          ${tcnt?`<div class="comment-badge"><span class="comment-badge-icon"></span><span class="comment-badge-num">${tcnt}</span></div>`:``}
           ${hasCf?'<div class="conflict-dot" title="Dobbeltbooket"></div>':''}`;
         tr.addEventListener('click',()=>scrollToAndOpen(task.id));
         tr.addEventListener('contextmenu',e=>{e.preventDefault();openCtxTask(e,task.id);});
@@ -2246,7 +2250,7 @@ function renderGantt(days,cfg){
           rzR.addEventListener('mousedown',e=>{e.stopPropagation();startRz(e,task,'r',days,cfg)});bar.appendChild(rzR);
           if(tcnt){
             const cb=document.createElement('div');cb.className='comment-badge';cb.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:5';
-            cb.innerHTML=`<span class="comment-badge-icon">💬</span><span class="comment-badge-num">${tcnt}</span>`;
+            cb.innerHTML=`<span class="comment-badge-icon"></span><span class="comment-badge-num">${tcnt}</span>`;
             cb.title=`${tcnt} kommentar${tcnt!==1?'er':''}`;
             cb.addEventListener('click',e2=>{e2.stopPropagation();selectedTid=task.id;openPopup('task',task.id,e2);setTimeout(()=>setPopTab('comments'),10);});
             bar.appendChild(cb);
@@ -2684,7 +2688,7 @@ function renderFlipGantt(days,cfg){
       // Comment badge — only if there are comments, clicking opens comments tab
       if(tcnt){
         const cb=document.createElement('div');cb.className='flip-bar-cmtbadge';
-        cb.innerHTML=`<span class="comment-badge-icon">💬</span><span class="comment-badge-num">${tcnt}</span>`;
+        cb.innerHTML=`<span class="comment-badge-icon"></span><span class="comment-badge-num">${tcnt}</span>`;
         cb.title=`${tcnt} kommentar${tcnt!==1?'er':''}`;
         cb.addEventListener('click',e2=>{
           e2.stopPropagation();
@@ -3033,11 +3037,13 @@ function renderPopBody(){
       const d=new Date(c.ts);
       const ts=`${d.getDate()}. ${DKMs[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       const el=document.createElement('div');el.className='pop-comment';
+      el.style.cursor='pointer';
       el.innerHTML=`<div class="pop-comment-meta">
         <div class="pop-cavatar" style="background:${col}22;color:${col}">${c.author}</div>
         <span class="pop-ctime">${ts}</span>
-        <span class="pop-cdel" onclick="popDelComment(${c.id})">slet</span>
-      </div><div class="pop-ctext">${escHtml(c.text)}</div>`;
+        <span class="pop-cdel" onclick="event.stopPropagation();popDelComment(${c.id})">slet</span>
+      </div><div class="pop-ctext" id="pop-ctext-${c.id}">${escHtml(c.text)}</div>`;
+      el.addEventListener('click',()=>popEditComment(el,c));
       list.appendChild(el);
     });
     cDiv.appendChild(list);
@@ -3056,6 +3062,33 @@ function renderPopBody(){
     body.appendChild(cDiv);
     setTimeout(()=>{list.scrollTop=list.scrollHeight},30);
   }
+}
+
+// ── COMMENT EDIT INLINE ──────────────────────────────────
+function popEditComment(el,c){
+  // Only allow editing if cloudEmp matches author
+  const ce=getCloudEmp();
+  if(!ce||ce.id!==c.author)return; // not your comment
+  if(el.querySelector('.pop-cedit-area'))return; // already editing
+  const textEl=el.querySelector('.pop-ctext');
+  const orig=c.text;
+  const ta=document.createElement('textarea');
+  ta.className='pop-ctextarea pop-cedit-area';
+  ta.value=orig;
+  ta.style.marginTop='4px';
+  ta.rows=3;
+  textEl.replaceWith(ta);
+  ta.focus();ta.selectionStart=ta.value.length;
+  const save=()=>{
+    const newText=ta.value.trim();
+    if(newText&&newText!==orig){c.text=newText;saveState();}
+    refreshPopup();
+  };
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();save();}
+    if(e.key==='Escape'){refreshPopup();}
+  });
+  ta.addEventListener('blur',()=>setTimeout(save,150));
 }
 
 // ── COMMENT AUTH ──────────────────────────────────────────
@@ -3225,7 +3258,7 @@ function showCmtTooltip(el,taskId){
     const emp=empBy(c.author);const col=emp?emp.color:'#9898b2';
     const d=new Date(c.ts);
     const ts=`${d.getDate()}. ${DKMs[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    html+=`<div class="cmt-tooltip-item" data-taskid="${taskId}">
+    html+=`<div class="cmt-tooltip-item" data-taskid="${taskId}" data-cmtid="${c.id}">
       <div class="cmt-tooltip-avatar" style="background:${col}22;color:${col}">${escHtml(c.author)}</div>
       <div class="cmt-tooltip-body">
         <div class="cmt-tooltip-meta">${escHtml(c.author)} · ${ts}</div>
@@ -3239,11 +3272,20 @@ function showCmtTooltip(el,taskId){
   tip.querySelectorAll('.cmt-tooltip-item,.cmt-tooltip-more').forEach(item=>{
     item.addEventListener('click',()=>{
       const tid=parseInt(item.dataset.taskid);
+      const cmtId=item.dataset.cmtid?parseInt(item.dataset.cmtid):null;
       selectedTid=tid;
-      // Find the bar element to anchor the popup
       const barEl=document.querySelector(`[data-tid="${tid}"]`);
+      const anchor=barEl||{clientX:0,clientY:0};
       openPopup('task',tid,barEl?{clientX:barEl.getBoundingClientRect().left,clientY:barEl.getBoundingClientRect().top}:null);
-      setTimeout(()=>setPopTab('comments'),10);
+      setTimeout(()=>{
+        setPopTab('comments');
+        if(cmtId){
+          setTimeout(()=>{
+            const cmtEl=document.getElementById(`pop-ctext-${cmtId}`);
+            if(cmtEl){cmtEl.closest('.pop-comment')?.scrollIntoView({block:'center',behavior:'smooth'});}
+          },60);
+        }
+      },10);
       hideCmtTooltip();
     });
   });
