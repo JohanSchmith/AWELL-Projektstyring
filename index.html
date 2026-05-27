@@ -14,7 +14,7 @@
   --t1:#ebebf4;--t2:#c8cadb;--t3:#9ca2c2;
   --acc:#5b8fff;--warn:#ff9f43;--danger:#ff5e5e;
   --pop-action-text:var(--t1);--dep-chip-text:var(--t1);--soft-danger-text:#ff8a8a;--chip-weight:500;
-  --row-h:44px;--task-h:36px;--label-w:240px;--head-h:56px;
+  --row-h:44px;--task-h:36px;--label-w:240px;--head-h:56px;--svc-head-h:56px;
 }
 :root.light{
   --bg:#f0f0f4;--s1:#ffffff;--s2:#f5f5f8;--s3:#eaeaef;
@@ -4351,8 +4351,8 @@ function svcZoomCfg(){
   switch(svcZoom){
     case 'day':   return{dw:80, span:21,  head:'day'};
     case 'week':  return{dw:20, span:91,  head:'week'};
-    case 'month': return{dw: 6, span:365, head:'month'};
-    case 'year':  return{dw: 2, span:730, head:'year'};
+    case 'month': return{dw:14, span:365, head:'month'};
+    case 'year':  return{dw: 4, span:730, head:'year'};
   }
 }
 
@@ -4637,25 +4637,40 @@ function renderSvcGantt(){
       d.setDate(d.getDate()+7);
     }
   } else if(cfg.head==='month'){
-    // Top row: years. Bottom row: months
+    // Row 1: years
     const yr=new Date(start);yr.setMonth(0);yr.setDate(1);
     while(yr<end){
       const ys=Math.round((yr-start)/864e5)*DW;
       const yn=new Date(yr);yn.setFullYear(yn.getFullYear()+1);
       const ye=Math.min(totalW,Math.round((yn-start)/864e5)*DW);
-      if(ye>0&&ys<totalW) headHTML+=`<div style="position:absolute;left:${Math.max(0,ys)}px;width:${ye-Math.max(0,ys)}px;top:0;height:20px;border-right:1px solid var(--b1);box-sizing:border-box;overflow:hidden"><span style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);padding:3px 5px;display:block">${yr.getFullYear()}</span></div>`;
+      if(ye>0&&ys<totalW) headHTML+=`<div style="position:absolute;left:${Math.max(0,ys)}px;width:${ye-Math.max(0,ys)}px;top:0;height:18px;border-right:1px solid var(--b1);box-sizing:border-box;overflow:hidden"><span style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);padding:2px 5px;display:block">${yr.getFullYear()}</span></div>`;
       yr.setFullYear(yr.getFullYear()+1);
     }
+    // Row 2: months
     const mo2=new Date(start);mo2.setDate(1);
     while(mo2<end){
       const ms=Math.round((mo2-start)/864e5)*DW;
       const mn2=new Date(mo2);mn2.setMonth(mn2.getMonth()+1);
       const me=Math.min(totalW,Math.round((mn2-start)/864e5)*DW);
-      const isCurrentMo=today.getMonth()===mo2.getMonth()&&today.getFullYear()===mo2.getFullYear();
-      headHTML+=`<div style="position:absolute;left:${ms}px;width:${me-ms}px;top:20px;height:36px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;''">
+      headHTML+=`<div style="position:absolute;left:${ms}px;width:${me-ms}px;top:18px;height:22px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;padding-left:5px;overflow:hidden">
         <span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:var(--t2);white-space:nowrap">${DKMs[mo2.getMonth()]}</span>
       </div>`;
       mo2.setMonth(mo2.getMonth()+1);
+    }
+    // Row 3: week numbers + tick marks per week
+    const dw2=new Date(start);
+    while(dw2.getDay()!==1)dw2.setDate(dw2.getDate()+1);
+    while(dw2<end){
+      const px=Math.round((dw2-start)/864e5)*DW;
+      const wEnd2=new Date(dw2);wEnd2.setDate(wEnd2.getDate()+7);
+      const wpx=Math.min(totalW,Math.round((wEnd2-start)/864e5)*DW);
+      const wNum=getWeekNumber(dw2);
+      const isNow=today>=dw2&&today<wEnd2;
+      const wid=wpx-px;
+      headHTML+=`<div style="position:absolute;left:${px}px;width:${wid}px;top:40px;height:16px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;${isNow?'background:rgba(255,228,77,.08)':''}">
+        ${wid>18?`<span style="font-size:8px;font-family:'DM Mono',monospace;color:${isNow?'#ffe44d':'var(--t3)'}">u${wNum}</span>`:'<div style="width:1px;height:6px;background:var(--b2)"></div>'}
+      </div>`;
+      dw2.setDate(dw2.getDate()+7);
     }
   } else { // year
     // Top row: year bands. Bottom row: month ticks
@@ -4676,10 +4691,10 @@ function renderSvcGantt(){
       const ms3=Math.round((mo3-start)/864e5)*DW;
       const mn3=new Date(mo3);mn3.setMonth(mn3.getMonth()+1);
       const me3=Math.min(totalW,Math.round((mn3-start)/864e5)*DW);
-      const isCurrentMo3=today.getMonth()===mo3.getMonth()&&today.getFullYear()===mo3.getFullYear();
       const wid=me3-ms3;
-      headHTML+=`<div style="position:absolute;left:${ms3}px;width:${wid}px;top:24px;height:32px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;''">
-        ${wid>16?`<span style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);white-space:nowrap">${DKMs[mo3.getMonth()].substring(0,3)}</span>`:''}
+      const isQ=mo3.getMonth()%3===0; // kvartal-start
+      headHTML+=`<div style="position:absolute;left:${ms3}px;width:${wid}px;top:24px;height:32px;border-right:1px solid var(--b1);box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;${isQ?'border-left:1px solid var(--b2)':''}">
+        ${wid>10?`<span style="font-size:${wid>20?'9':'8'}px;font-family:'DM Mono',monospace;color:${isQ?'var(--t2)':'var(--t3)'};white-space:nowrap;font-weight:${isQ?700:400}">${wid>20?DKMs[mo3.getMonth()].substring(0,3):mo3.getMonth()===0||isQ?DKMs[mo3.getMonth()].substring(0,1):''}</span>`:'<div style="width:1px;height:4px;background:var(--b2)"></div>'}
       </div>`;
       mo3.setMonth(mo3.getMonth()+1);
     }
@@ -4730,17 +4745,28 @@ function renderSvcGantt(){
         d2.setDate(d2.getDate()+7);wi++;
       }
     } else {
-      // Month columns
+      // Month columns + weekend shading day-by-day
       const mc=new Date(start);mc.setDate(1);let mi=0;
       while(mc<end){
         const ms2=Math.round((mc-start)/864e5)*DW;
         const mn=new Date(mc);mn.setMonth(mn.getMonth()+1);
         const me2=Math.min(totalW,Math.round((mn-start)/864e5)*DW);
-        const isCurrentMo=today.getMonth()===mc.getMonth()&&today.getFullYear()===mc.getFullYear();
         const col=document.createElement('div');
-        col.style.cssText=`position:absolute;left:${ms2}px;width:${me2-ms2}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${isCurrentMo?'background:rgba(91,143,255,.04)':mi%2===1?'background:rgba(255,255,255,.02)':''}`;
+        col.style.cssText=`position:absolute;left:${ms2}px;width:${me2-ms2}px;height:100%;border-right:1px solid var(--b1);box-sizing:border-box;${mi%2===1?'background:rgba(255,255,255,.015)':''}`;
         bg.appendChild(col);
         mc.setMonth(mc.getMonth()+1);mi++;
+      }
+      // Weekend shading
+      const dIterW=new Date(start);
+      while(dIterW<end){
+        const dow=dIterW.getDay();
+        if(dow===0||dow===6){
+          const px=Math.round((dIterW-start)/864e5)*DW;
+          const sh=document.createElement('div');
+          sh.style.cssText=`position:absolute;left:${px}px;width:${DW}px;height:100%;background:rgba(255,255,255,.04);pointer-events:none`;
+          bg.appendChild(sh);
+        }
+        dIterW.setDate(dIterW.getDate()+1);
       }
     }
     rowEl.appendChild(bg);
